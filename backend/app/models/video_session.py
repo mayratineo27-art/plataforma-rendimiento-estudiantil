@@ -55,7 +55,7 @@ class VideoSession(db.Model):
     dominant_emotion = db.Column(db.String(50))
     
     # Metadata adicional (JSON)
-    metadata = db.Column(db.JSON)
+    meta_info = db.Column(db.JSON)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

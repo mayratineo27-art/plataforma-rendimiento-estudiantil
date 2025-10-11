@@ -57,7 +57,8 @@ class Document(db.Model):
     error_message = db.Column(db.Text)
     
     # Metadata adicional (JSON)
-    metadata = db.Column(db.JSON)
+    # Nota: 'metadata' es palabra reservada, usamos 'meta_info'
+    meta_info = db.Column(db.JSON)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

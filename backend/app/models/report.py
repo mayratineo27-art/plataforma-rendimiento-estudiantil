@@ -72,7 +72,7 @@ class Report(db.Model):
     content_style = db.Column(db.String(100))  # 'visual', 'detailed', 'summary'
     
     # Metadata adicional
-    metadata = db.Column(db.JSON)
+    meta_info = db.Column(db.JSON)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
