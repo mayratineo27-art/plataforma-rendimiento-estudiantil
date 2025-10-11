@@ -1,0 +1,132 @@
+# ============================================
+# .gitignore - Plataforma Integral de Rendimiento Estudiantil
+# ============================================
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# ===== Node / React =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build outputs
+build/
+dist/
+*.local
+
+# ===== Frontend =====
+/frontend/build/
+/frontend/node_modules/
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.development.local
+/frontend/.env.test.local
+/frontend/.env.production.local
+
+# ===== Backend =====
+/backend/.env
+/backend/uploads/*
+/backend/generated/*
+/backend/logs/*
+!/backend/uploads/.gitkeep
+!/backend/generated/.gitkeep
+!/backend/logs/.gitkeep
+
+# ===== Database =====
+*.db
+*.sqlite
+*.sqlite3
+
+# MySQL
+mysql-data/
+
+# ===== Archivos de Sistema =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ===== Logs =====
+logs/
+*.log
+
+# ===== Variables de entorno =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===== Archivos temporales =====
+tmp/
+temp/
+*.tmp
+
+# ===== Archivos de respaldo =====
+*.bak
+*.backup
+
+# ===== Archivos grandes (modelos de IA descargados) =====
+*.h5
+*.pkl
+*.pth
+*.onnx
+models/weights/
+
+# ===== Documentos generados temporalmente =====
+*.pptx
+*.docx
+*.pdf
+!docs/**/*.pdf
+!docs/**/*.pptx

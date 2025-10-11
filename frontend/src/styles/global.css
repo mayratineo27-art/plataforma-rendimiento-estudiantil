@@ -1,0 +1,11 @@
+/* Variables globales y estilos personalizados */
+
+:root {
+  --primary-color: #3B82F6;
+  --secondary-color: #6366F1;
+  --success-color: #10B981;
+  --error-color: #EF4444;
+  --warning-color: #F59E0B;
+}
+
+/* Puedes agregar estilos globales aquí más adelante */
