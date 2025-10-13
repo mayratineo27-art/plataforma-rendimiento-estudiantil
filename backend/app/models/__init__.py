@@ -59,3 +59,12 @@ from app.models import (
     AttentionMetrics, AudioSession, AudioTranscription,
     StudentProfile, Report, GeneratedTemplate
 )
+
+# En app/models/__init__.py, agregar al final:
+from app.models.ai_interactions import AIInteraction
+
+# Y agregarlo también a __all__:
+__all__ = [
+    # ... todos los anteriores
+    'AIInteraction'  # ← Agregar esta línea
+]
