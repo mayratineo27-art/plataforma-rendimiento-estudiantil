@@ -208,7 +208,7 @@ class Document(db.Model):
             'has_analysis': self.has_analysis,
             'processing_time_seconds': self.processing_time_seconds,
             'age_days': self.age_days,
-            'metadata': self.metadata,
+            'meta_info': self.meta_info,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
         

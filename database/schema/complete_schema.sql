@@ -60,7 +60,7 @@ CREATE TABLE documents (
     processing_started_at DATETIME,
     processing_completed_at DATETIME,
     error_message TEXT,
-    metadata JSON,
+    meta_info JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

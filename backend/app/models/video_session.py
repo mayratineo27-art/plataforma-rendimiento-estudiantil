@@ -217,7 +217,7 @@ class VideoSession(db.Model):
             'is_active': self.is_active,
             'is_completed': self.is_completed,
             'has_video_file': self.has_video_file,
-            'metadata': self.metadata,
+            'meta_info': self.meta_info,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
         

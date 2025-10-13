@@ -31,6 +31,37 @@ def create_app(config_name='development'):
     
     # Inicializar extensiones
     db.init_app(app)
+
+    # REGISTRAR BLUEPRINTS (AGREGAR ESTA LLAMADA)
+    register_blueprints(app)
+    
+
+    
+    return app
+
+"""
+AGREGAR ESTO a la función register_blueprints() en app/__init__.py
+Reemplaza la función completa con esta versión actualizada:
+"""
+
+def register_blueprints(app):
+    """Registrar todos los blueprints de la aplicación"""
+    from app.routes.auth_routes import auth_bp
+    from app.routes.video_routes import video_bp
+    from app.routes.audio_routes import audio_bp
+    # from app.routes.document_routes import document_bp
+    # from app.routes.analysis_routes import analysis_bp
+    # from app.routes.profile_routes import profile_bp
+    # from app.routes.report_routes import report_bp
+    
+    # Registrar blueprints con prefijo /api
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(video_bp, url_prefix='/api/video')
+    app.register_blueprint(audio_bp, url_prefix='/api/audio')
+    # app.register_blueprint(document_bp, url_prefix='/api/documents')
+    # app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
+    # app.register_blueprint(profile_bp, url_prefix='/api/profile')
+    # app.register_blueprint(report_bp, url_prefix='/api/reports')
     
     # Ruta de prueba
     @app.route('/')
@@ -39,15 +70,17 @@ def create_app(config_name='development'):
             'message': 'Plataforma Integral de Rendimiento Estudiantil API',
             'version': '1.0.0',
             'status': 'running',
-            "documentation": "/api/docs"
+            'endpoints': {
+                'auth': '/api/auth',
+                'video': '/api/video',
+                'audio': '/api/audio'
+            }
         }
     
     @app.route('/health')
     def health():
-        return {'status': 'healthy', "service": "backend"}
-    
-    # Registrar blueprints (comentados por ahora)
-    # from app.routes.auth_routes import auth_bp
-    # app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    
-    return app
+        """Endpoint de health check"""
+        return {'status': 'healthy', 'service': 'backend'}
+
+# Importar modelos para que SQLAlchemy los reconozca
+from app.models import *

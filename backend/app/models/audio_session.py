@@ -245,7 +245,7 @@ class AudioSession(db.Model):
             'is_linked_to_video': self.is_linked_to_video,
             'processing_time_seconds': self.processing_time_seconds,
             'transcription_segments_count': self.transcriptions.count(),
-            'metadata': self.metadata,
+            'meta_info': self.meta_info,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
