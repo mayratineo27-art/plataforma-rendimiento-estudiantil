@@ -68,3 +68,29 @@ __all__ = [
     # ... todos los anteriores
     'AIInteraction'  # ← Agregar esta línea
 ]
+
+# 🆕 NUEVOS MODELOS ACADÉMICOS
+from app.models.academic import AcademicCourse, AcademicTask 
+from app.models.timer import StudyTimer
+from app.models.project import Project, TimeSession
+
+__all__ = [
+    'User',
+    # ... los demás ...
+    'Report',
+    'GeneratedTemplate',
+    'AIInteraction',
+    'AcademicCourse', # 🆕
+    'AcademicTask',   # 🆕
+    'StudyTimer',     # 🆕
+    'Project',        # 🆕
+    'TimeSession'     # 🆕
+]
+
+# ... import final ...
+from app.models import (
+    User, Document, TextAnalysis, VideoSession, EmotionData,
+    AttentionMetrics, AudioSession, AudioTranscription,
+    StudentProfile, Report, GeneratedTemplate, AIInteraction,
+    AcademicCourse, AcademicTask, StudyTimer, Project, TimeSession # 🆕
+)

@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^14.5.1",
     "axios": "^1.6.2",
     "chart.js": "^4.4.1",
+    "lucide-react": "^0.554.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
@@ -19,7 +20,10 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7",
+    "@testing-library/cypress": "^10.1.0",
     "autoprefixer": "^10.4.16",
+    "cypress": "^15.4.0",
+    "cypress-file-upload": "^5.0.8",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0"
   },

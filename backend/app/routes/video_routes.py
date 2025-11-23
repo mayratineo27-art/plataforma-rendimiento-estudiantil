@@ -1,54 +1,72 @@
 # ============================================
 # app/routes/video_routes.py - Módulo 2
+# VERSIÓN CORREGIDA Y COMPLETA
 # ============================================
 """
-app/routes/video_routes.py - Rutas de Video (Módulo 2)
+app/routes/video_routes.py - Rutas de Video y Audio (Módulo 2)
 Plataforma Integral de Rendimiento Estudiantil
 
-Endpoints para gestionar sesiones de análisis de video en tiempo real.
+Endpoints para gestionar sesiones de análisis de video y audio en tiempo real.
 """
 
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from app import db
-from app.models import VideoSession, EmotionData, AttentionMetrics, User
-from app.services.video_processing.emotion_recognition import emotion_service
+from app.models.user import User
+from app.models.video_session import VideoSession
+from app.models.emotion_data import EmotionData
+from app.models.audio_transcription import AudioTranscription
+from app.models.attention_metrics import AttentionMetrics
 
+# Importar controladores
+try:
+    from app.controllers.video_controller import VideoController
+    from app.controllers.audio_controller import AudioController
+    video_controller = VideoController()
+    audio_controller = AudioController()
+    CONTROLLERS_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Controladores no disponibles: {e}")
+    CONTROLLERS_AVAILABLE = False
 
-# Crear blueprint
+# ========================================
+# CREAR BLUEPRINTS (UNA SOLA VEZ)
+# ========================================
 video_bp = Blueprint('video', __name__)
+audio_bp = Blueprint('audio', __name__)
 
+
+# ========================================
+# ENDPOINTS DE VIDEO
+# ========================================
 
 @video_bp.route('/session/start', methods=['POST'])
 def start_video_session():
     """
+    POST /api/video/session/start
     Iniciar una nueva sesión de análisis de video
     
     Body (JSON):
     {
         "user_id": 1,
         "session_name": "Clase de IA",
-        "session_type": "clase",  # clase, exposicion, estudio, tutorial, otro
+        "session_type": "clase",
         "course_name": "Inteligencia Artificial"
     }
-    
-    Returns:
-        201: Sesión creada exitosamente
-        400: Error en datos de entrada
     """
+    if CONTROLLERS_AVAILABLE:
+        return video_controller.start_session()
+    
     try:
         data = request.get_json()
         
-        # Validar campos requeridos
         if not data.get('user_id'):
             return jsonify({'error': 'user_id es requerido'}), 400
         
-        # Verificar que el usuario existe
         user = User.query.get(data['user_id'])
         if not user:
             return jsonify({'error': 'Usuario no encontrado'}), 404
         
-        # Crear nueva sesión
         session = VideoSession(
             user_id=data['user_id'],
             session_name=data.get('session_name', 'Sesión sin nombre'),
@@ -56,16 +74,13 @@ def start_video_session():
             course_name=data.get('course_name')
         )
         
-        # Iniciar sesión
         session.start_session()
-        
-        # Guardar en BD
         db.session.add(session)
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': 'Sesión de video iniciada correctamente',
+            'message': 'Sesión iniciada correctamente',
             'session': session.to_dict()
         }), 201
         
@@ -77,55 +92,121 @@ def start_video_session():
         }), 500
 
 
-@video_bp.route('/session/<int:session_id>', methods=['GET'])
-def get_video_session(session_id):
+@video_bp.route('/analyze-frame', methods=['POST'])
+def analyze_frame():
     """
-    Obtener información de una sesión de video
+    POST /api/video/analyze-frame
+    Analizar frame con DeepFace en tiempo real
     
-    Returns:
-        200: Información de la sesión
-        404: Sesión no encontrada
+    Form data:
+        - frame: Archivo de imagen (JPG/PNG)
+        - session_id: ID de la sesión
+        - timestamp: Timestamp del frame
     """
+    if CONTROLLERS_AVAILABLE:
+        return video_controller.analyze_frame()
+    
     try:
-        session = VideoSession.query.get(session_id)
+        if 'frame' not in request.files:
+            return jsonify({'error': 'No frame provided'}), 400
         
+        frame_file = request.files['frame']
+        session_id = request.form.get('session_id')
+        timestamp = request.form.get('timestamp', 0, type=float)
+        
+        if not session_id:
+            return jsonify({'error': 'session_id es requerido'}), 400
+        
+        # Verificar sesión
+        session = VideoSession.query.get(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         
-        return jsonify({
-            'success': True,
-            'session': session.to_dict(include_relations=True)
-        }), 200
-        
+        # Procesar frame con servicio de IA
+        try:
+            from app.services.ai.vision_service import vision_service
+            
+            # Convertir a numpy array
+            import cv2
+            import numpy as np
+            nparr = np.frombuffer(frame_file.read(), np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            # Analizar
+            result = vision_service.analyze_frame(frame)
+            
+            if result['face_detected']:
+                # Crear registro de emoción
+                emotion = EmotionData(
+                    session_id=session_id,
+                    user_id=session.user_id,
+                    timestamp_seconds=timestamp,
+                    frame_number=int(timestamp * 30),  # Asumiendo 30 FPS
+                    face_detected=True,
+                    face_count=result.get('face_count', 1),
+                    age=result.get('age'),
+                    gender=result.get('gender'),
+                    face_bbox=result.get('face_bbox')
+                )
+                
+                emotion.set_emotions(result['emotions'])
+                
+                db.session.add(emotion)
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'emotion': emotion.to_dict()
+                }), 200
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'No face detected'
+                }), 200
+                
+        except ImportError:
+            return jsonify({
+                'error': 'Vision service no disponible',
+                'message': 'Instala DeepFace: pip install deepface'
+            }), 500
+            
     except Exception as e:
+        db.session.rollback()
         return jsonify({
             'error': True,
-            'message': f'Error al obtener sesión: {str(e)}'
+            'message': f'Error al analizar frame: {str(e)}'
         }), 500
 
 
-@video_bp.route('/session/<int:session_id>/end', methods=['POST'])
-def end_video_session(session_id):
+@video_bp.route('/session/end', methods=['POST'])
+def end_video_session():
     """
-    Finalizar una sesión de video
+    POST /api/video/session/end
+    Finalizar sesión de video
     
-    Returns:
-        200: Sesión finalizada correctamente
-        404: Sesión no encontrada
+    Body (JSON):
+    {
+        "session_id": 1
+    }
     """
+    if CONTROLLERS_AVAILABLE:
+        return video_controller.end_session()
+    
     try:
-        session = VideoSession.query.get(session_id)
+        data = request.get_json()
+        session_id = data.get('session_id')
         
+        if not session_id:
+            return jsonify({'error': 'session_id es requerido'}), 400
+        
+        session = VideoSession.query.get(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         
         if not session.is_active:
             return jsonify({'error': 'La sesión ya fue finalizada'}), 400
         
-        # Finalizar sesión
         session.end_session()
-        
-        # Calcular métricas resumen
         session.calculate_summary_metrics()
         
         db.session.commit()
@@ -144,140 +225,59 @@ def end_video_session(session_id):
         }), 500
 
 
-@video_bp.route('/session/<int:session_id>/emotion', methods=['POST'])
-def add_emotion_data(session_id):
+@video_bp.route('/session/<int:session_id>/analysis', methods=['GET'])
+def get_session_analysis(session_id):
     """
-    Agregar datos de emoción de un frame
-    
-    Body (JSON):
-    {
-        "timestamp_seconds": 10.5,
-        "frame_number": 315,
-        "face_detected": true,
-        "face_count": 1,
-        "emotions": {
-            "angry": 0.5,
-            "disgust": 0.2,
-            "fear": 1.0,
-            "happy": 85.3,
-            "sad": 0.8,
-            "surprise": 10.2,
-            "neutral": 2.0
-        },
-        "age": 22,
-        "gender": "Man",
-        "face_bbox": {"x": 100, "y": 150, "w": 200, "h": 250}
-    }
-    
-    Returns:
-        201: Emoción registrada correctamente
-        404: Sesión no encontrada
+    GET /api/video/session/{id}/analysis
+    Obtener análisis completo de la sesión
     """
-    try:
-        data = request.get_json()
-        
-        # Verificar que la sesión existe
-        session = VideoSession.query.get(session_id)
-        if not session:
-            return jsonify({'error': 'Sesión no encontrada'}), 404
-        
-        # Validar campos requeridos
-        if data.get('timestamp_seconds') is None or data.get('frame_number') is None:
-            return jsonify({'error': 'timestamp_seconds y frame_number son requeridos'}), 400
-        
-        # Crear registro de emoción
-        emotion = EmotionData(
-            session_id=session_id,
-            user_id=session.user_id,
-            timestamp_seconds=data['timestamp_seconds'],
-            frame_number=data['frame_number'],
-            face_detected=data.get('face_detected', False),
-            face_count=data.get('face_count', 0),
-            age=data.get('age'),
-            gender=data.get('gender'),
-            face_bbox=data.get('face_bbox')
-        )
-        
-        # Establecer emociones si se detectó rostro
-        if data.get('face_detected') and data.get('emotions'):
-            emotion.set_emotions(data['emotions'])
-        
-        db.session.add(emotion)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Emoción registrada correctamente',
-            'emotion': emotion.to_dict()
-        }), 201
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'error': True,
-            'message': f'Error al registrar emoción: {str(e)}'
-        }), 500
-
-
-@video_bp.route('/session/<int:session_id>/emotions', methods=['GET'])
-def get_session_emotions(session_id):
-    """
-    Obtener timeline de emociones de una sesión
+    if CONTROLLERS_AVAILABLE:
+        return video_controller.get_session_analysis(session_id)
     
-    Query params:
-        - limit: Número máximo de registros (default: 100)
-        - offset: Offset para paginación (default: 0)
-    
-    Returns:
-        200: Lista de emociones
-        404: Sesión no encontrada
-    """
     try:
         session = VideoSession.query.get(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         
-        # Parámetros de paginación
-        limit = request.args.get('limit', 100, type=int)
-        offset = request.args.get('offset', 0, type=int)
-        
-        # Obtener emociones
+        # Obtener todas las emociones
         emotions = EmotionData.query.filter_by(session_id=session_id)\
             .order_by(EmotionData.timestamp_seconds)\
-            .limit(limit)\
-            .offset(offset)\
             .all()
+        
+        # Calcular estadísticas
+        total_emotions = len(emotions)
+        faces_detected = sum(1 for e in emotions if e.face_detected)
         
         return jsonify({
             'success': True,
-            'total': session.emotion_data.count(),
-            'limit': limit,
-            'offset': offset,
+            'session': session.to_dict(),
+            'total_emotions': total_emotions,
+            'faces_detected': faces_detected,
+            'detection_rate': round((faces_detected / total_emotions * 100) if total_emotions > 0 else 0, 2),
             'emotions': [e.to_dict() for e in emotions]
         }), 200
         
     except Exception as e:
         return jsonify({
             'error': True,
-            'message': f'Error al obtener emociones: {str(e)}'
+            'message': f'Error al obtener análisis: {str(e)}'
         }), 500
 
 
 @video_bp.route('/session/<int:session_id>/attention', methods=['GET'])
 def get_attention_metrics(session_id):
     """
-    Obtener métricas de atención de una sesión
-    
-    Returns:
-        200: Métricas de atención
-        404: Sesión no encontrada
+    GET /api/video/session/{id}/attention
+    Obtener métricas de atención
     """
+    if CONTROLLERS_AVAILABLE:
+        return video_controller.get_attention_metrics(session_id)
+    
     try:
         session = VideoSession.query.get(session_id)
         if not session:
             return jsonify({'error': 'Sesión no encontrada'}), 404
         
-        # Obtener métricas de atención
         metrics = AttentionMetrics.query.filter_by(session_id=session_id)\
             .order_by(AttentionMetrics.time_interval_start)\
             .all()
@@ -296,116 +296,24 @@ def get_attention_metrics(session_id):
         }), 500
 
 
-@video_bp.route('/session/<int:session_id>/calculate-attention', methods=['POST'])
-def calculate_attention_metrics(session_id):
-    """
-    Calcular métricas de atención para intervalos de tiempo
-    
-    Body (JSON):
-    {
-        "interval_duration": 30  # segundos por intervalo (default: 30)
-    }
-    
-    Returns:
-        200: Métricas calculadas
-        404: Sesión no encontrada
-    """
-    try:
-        data = request.get_json() or {}
-        interval_duration = data.get('interval_duration', 30)
-        
-        session = VideoSession.query.get(session_id)
-        if not session:
-            return jsonify({'error': 'Sesión no encontrada'}), 404
-        
-        if not session.duration_seconds:
-            return jsonify({'error': 'La sesión no tiene duración definida'}), 400
-        
-        # Obtener todas las emociones de la sesión
-        all_emotions = EmotionData.query.filter_by(session_id=session_id)\
-            .order_by(EmotionData.timestamp_seconds)\
-            .all()
-        
-        if not all_emotions:
-            return jsonify({'error': 'No hay datos de emociones para esta sesión'}), 400
-        
-        # Dividir en intervalos y calcular métricas
-        metrics_created = []
-        current_time = 0
-        
-        while current_time < session.duration_seconds:
-            interval_end = min(current_time + interval_duration, session.duration_seconds)
-            
-            # Filtrar emociones en este intervalo
-            interval_emotions = [
-                e for e in all_emotions 
-                if current_time <= float(e.timestamp_seconds) < interval_end
-            ]
-            
-            if interval_emotions:
-                # Crear métrica de atención
-                metric = AttentionMetrics(
-                    session_id=session_id,
-                    user_id=session.user_id,
-                    time_interval_start=current_time,
-                    time_interval_end=interval_end
-                )
-                
-                # Calcular score de atención
-                metric.calculate_attention_score(interval_emotions)
-                
-                db.session.add(metric)
-                metrics_created.append(metric)
-            
-            current_time = interval_end
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'{len(metrics_created)} métricas de atención calculadas',
-            'metrics': [m.to_dict() for m in metrics_created]
-        }), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'error': True,
-            'message': f'Error al calcular métricas: {str(e)}'
-        }), 500
-
-
-@video_bp.route('/user/<int:user_id>/sessions', methods=['GET'])
+@video_bp.route('/sessions/<int:user_id>', methods=['GET'])
 def get_user_sessions(user_id):
     """
+    GET /api/video/sessions/{user_id}
     Obtener todas las sesiones de un usuario
-    
-    Query params:
-        - status: Filtrar por estado (recording, completed, etc.)
-        - limit: Número máximo de sesiones (default: 20)
-    
-    Returns:
-        200: Lista de sesiones
-        404: Usuario no encontrado
     """
+    if CONTROLLERS_AVAILABLE:
+        return video_controller.get_user_sessions(user_id)
+    
     try:
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Usuario no encontrado'}), 404
         
-        # Filtros
-        status = request.args.get('status')
         limit = request.args.get('limit', 20, type=int)
         
-        # Query base
-        query = VideoSession.query.filter_by(user_id=user_id)
-        
-        # Aplicar filtro de estado si existe
-        if status:
-            query = query.filter_by(processing_status=status)
-        
-        # Ordenar y limitar
-        sessions = query.order_by(VideoSession.created_at.desc())\
+        sessions = VideoSession.query.filter_by(user_id=user_id)\
+            .order_by(VideoSession.created_at.desc())\
             .limit(limit)\
             .all()
         
@@ -421,40 +329,195 @@ def get_user_sessions(user_id):
             'error': True,
             'message': f'Error al obtener sesiones: {str(e)}'
         }), 500
-    
-# AGREGAR ESTE NUEVO ENDPOINT (no reemplazar nada)
-from app.services.video_processing.emotion_recognition import emotion_service
 
-@video_bp.route('/session/<int:session_id>/analyze-frame', methods=['POST'])
-def analyze_frame_realtime(session_id):
-    """Analizar frame con DeepFace en tiempo real"""
+
+# ========================================
+# ENDPOINTS DE AUDIO
+# ========================================
+
+@audio_bp.route('/transcribe', methods=['POST'])
+def transcribe_audio():
+    """
+    POST /api/audio/transcribe
+    Transcribir audio con Speech Recognition
     
-    # Recibir imagen del frontend (base64 o file)
-    if 'frame' not in request.files:
-        return jsonify({'error': 'No frame provided'}), 400
+    Form data:
+        - audio: Archivo de audio
+        - session_id: ID de la sesión
+        - start_time: Tiempo de inicio
+        - end_time: Tiempo de fin
+    """
+    if CONTROLLERS_AVAILABLE:
+        return audio_controller.transcribe_audio()
     
-    frame_file = request.files['frame']
-    
-    # Convertir a numpy array
-    import cv2
-    import numpy as np
-    nparr = np.frombuffer(frame_file.read(), np.uint8)
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    
-    # Analizar con DeepFace
-    result = emotion_service.analyze_frame(frame)
-    
-    if result['face_detected']:
-        # Crear EmotionData
-        emotion = EmotionData(...)
-        emotion.set_emotions(result['emotions'])
+    try:
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio provided'}), 400
         
-        db.session.add(emotion)
-        db.session.commit()
+        audio_file = request.files['audio']
+        session_id = request.form.get('session_id')
+        start_time = request.form.get('start_time', 0, type=float)
+        end_time = request.form.get('end_time', 0, type=float)
+        
+        if not session_id:
+            return jsonify({'error': 'session_id es requerido'}), 400
+        
+        # Verificar sesión
+        session = VideoSession.query.get(session_id)
+        if not session:
+            return jsonify({'error': 'Sesión no encontrada'}), 404
+        
+        # Procesar audio
+        try:
+            from app.services.ai.audio_service import audio_service
+            
+            # Guardar archivo temporal
+            import os
+            temp_path = f"/tmp/audio_{session_id}_{start_time}.wav"
+            audio_file.save(temp_path)
+            
+            # Transcribir
+            result = audio_service.transcribe_audio(temp_path)
+            
+            if result['success']:
+                # Crear transcripción
+                transcription = AudioTranscription(
+                    session_id=session_id,
+                    user_id=session.user_id,
+                    start_time=start_time,
+                    end_time=end_time,
+                    text=result['text'],
+                    confidence=result.get('confidence', 0)
+                )
+                
+                # Analizar sentimiento
+                transcription.analyze_sentiment_basic()
+                
+                db.session.add(transcription)
+                db.session.commit()
+                
+                # Limpiar archivo temporal
+                os.remove(temp_path)
+                
+                return jsonify({
+                    'success': True,
+                    'transcription': transcription.to_dict()
+                }), 200
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': result.get('error', 'Transcription failed')
+                }), 200
+                
+        except ImportError:
+            return jsonify({
+                'error': 'Audio service no disponible',
+                'message': 'Instala SpeechRecognition: pip install SpeechRecognition'
+            }), 500
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': True,
+            'message': f'Error al transcribir: {str(e)}'
+        }), 500
+
+
+@audio_bp.route('/session/<int:session_id>/transcriptions', methods=['GET'])
+def get_session_transcriptions(session_id):
+    """
+    GET /api/audio/session/{id}/transcriptions
+    Obtener todas las transcripciones de una sesión
+    """
+    if CONTROLLERS_AVAILABLE:
+        return audio_controller.get_session_transcriptions(session_id)
+    
+    try:
+        session = VideoSession.query.get(session_id)
+        if not session:
+            return jsonify({'error': 'Sesión no encontrada'}), 404
+        
+        transcriptions = AudioTranscription.query.filter_by(session_id=session_id)\
+            .order_by(AudioTranscription.start_time)\
+            .all()
+        
+        # Texto completo
+        full_text = ' '.join([t.text for t in transcriptions if t.text])
         
         return jsonify({
             'success': True,
-            'emotion': emotion.to_dict()
-        })
+            'session_id': session_id,
+            'total_transcriptions': len(transcriptions),
+            'full_text': full_text,
+            'word_count': len(full_text.split()),
+            'transcriptions': [t.to_dict() for t in transcriptions]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Error al obtener transcripciones: {str(e)}'
+        }), 500
+
+
+@audio_bp.route('/sentiment', methods=['POST'])
+def analyze_sentiment():
+    """
+    POST /api/audio/sentiment
+    Analizar sentimiento de texto
     
-    return jsonify({'success': False, 'error': 'No face detected'})
+    Body (JSON):
+    {
+        "text": "Texto a analizar"
+    }
+    """
+    if CONTROLLERS_AVAILABLE:
+        return audio_controller.analyze_sentiment()
+    
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'error': 'text es requerido'}), 400
+        
+        # Análisis básico de sentimiento
+        from app.services.ai.audio_service import audio_service
+        sentiment = audio_service.analyze_sentiment_basic(text)
+        
+        return jsonify({
+            'success': True,
+            'text': text,
+            'sentiment': sentiment['sentiment'],
+            'confidence': sentiment['confidence']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Error al analizar sentimiento: {str(e)}'
+        }), 500
+
+
+# ========================================
+# ENDPOINT DE PRUEBA
+# ========================================
+
+@video_bp.route('/test', methods=['GET'])
+def test_video():
+    """GET /api/video/test - Verificar que el blueprint funciona"""
+    return jsonify({
+        'success': True,
+        'message': 'Video routes funcionando correctamente',
+        'controllers_available': CONTROLLERS_AVAILABLE
+    }), 200
+
+
+@audio_bp.route('/test', methods=['GET'])
+def test_audio():
+    """GET /api/audio/test - Verificar que el blueprint funciona"""
+    return jsonify({
+        'success': True,
+        'message': 'Audio routes funcionando correctamente',
+        'controllers_available': CONTROLLERS_AVAILABLE
+    }), 200

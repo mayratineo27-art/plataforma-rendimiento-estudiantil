@@ -34,4 +34,6 @@ console_handler.setFormatter(formatter)
 # Agregar handlers
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
+
+# Prevenir propagación a root logger
 logger.propagate = False

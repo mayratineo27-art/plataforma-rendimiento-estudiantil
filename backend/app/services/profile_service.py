@@ -51,11 +51,16 @@ class ProfileService:
             # Recopilar datos
             data = self._aggregate_data(user_id)
             
+            # ✅ CAMBIO REALIZADO: Permitir perfiles vacíos para usuarios nuevos
             if not data['has_data']:
                 return {
-                    'success': False,
-                    'error': 'No hay suficientes datos para generar el perfil',
-                    'message': 'El estudiante debe tener al menos una sesión de video o documento analizado'
+                    'success': True,  # ¡Importante! Cambiamos a True
+                    'data': {
+                        'thesis_readiness': 0,
+                        'strengths': ["Cuenta Nueva", "Listo para aprender"],
+                        'weaknesses': ["Falta recopilar datos"],
+                        'summary': "¡Bienvenido a tu Matriz de Progreso! Tu perfil se generará automáticamente en cuanto subas tu primer documento o realices una sesión de video."
+                    }
                 }
             
             # Crear o actualizar perfil

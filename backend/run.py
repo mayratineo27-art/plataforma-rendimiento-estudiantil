@@ -1,24 +1,15 @@
-## # Punto de entrada
 """
-run.py - Punto de entrada principal para la aplicación Flask
+Punto de entrada de la aplicación
 Plataforma Integral de Rendimiento Estudiantil
 """
 
-import os
 from app import create_app
-from dotenv import load_dotenv
+import os
 
-# Cargar variables de entorno
-load_dotenv()
-
-# Crear la aplicación Flask
-app = create_app(os.getenv('FLASK_ENV', 'development'))
+app = create_app()
 
 if __name__ == '__main__':
-    # Configuración del servidor
-    host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', 5000))
-    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     
     print(f"""
     ╔══════════════════════════════════════════════════════════════╗
@@ -26,18 +17,24 @@ if __name__ == '__main__':
     ║  Backend Server Starting...                                  ║
     ╚══════════════════════════════════════════════════════════════╝
     
-    🚀 Servidor corriendo en: http://{host}:{port}
-    🔧 Modo: {os.getenv('FLASK_ENV', 'development')}
-    🐛 Debug: {debug}
-    📚 Documentación API: http://{host}:{port}/api/docs
+    🚀 Servidor corriendo en: http://localhost:{port}
+    🔧 Modo: development
     
     Presiona CTRL+C para detener el servidor
     """)
     
-    # Iniciar el servidor
-    app.run(
-        host=host,
-        port=port,
-        debug=debug,
-        threaded=True
-    )
+    try:
+        # Intentar usar waitress (mejor para Windows)
+        from waitress import serve
+        print("    ✓ Usando servidor Waitress")
+        print()
+        serve(app, host='127.0.0.1', port=port)
+    except ImportError:
+        print("    ⚠️  Waitress no instalado, instalando...")
+        import subprocess
+        import sys
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'waitress'])
+        from waitress import serve
+        print("    ✓ Waitress instalado y ejecutando")
+        print()
+        serve(app, host='127.0.0.1', port=port)

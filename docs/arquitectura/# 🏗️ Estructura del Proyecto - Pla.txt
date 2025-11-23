@@ -1,0 +1,316 @@
+# 🏗️ Estructura del Proyecto - Plataforma Integral de Rendimiento Estudiantil
+
+```
+plataforma-rendimiento-estudiantil/
+│
+├── 📁 frontend/                          # Aplicación React
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/                   # Componentes reutilizables
+│   │   │   ├── common/                   # Botones, inputs, modales
+│   │   │   ├── layout/                   # Header, Footer, Sidebar
+│   │   │   └── ui/                       # Elementos de interfaz
+│   │   ├── modules/                      # Módulos principales
+│   │   │   ├── modulo1-analisis-progreso/
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── FileUploader.jsx
+│   │   │   │   │   ├── ProgressDashboard.jsx
+│   │   │   │   │   └── DocumentAnalysis.jsx
+│   │   │   │   ├── hooks/
+│   │   │   │   │   └── useDocumentAnalysis.js
+│   │   │   │   ├── services/
+│   │   │   │   │   └── documentService.js
+│   │   │   │   └── utils/
+│   │   │   │       └── documentValidation.js
+│   │   │   │
+│   │   │   ├── modulo2-interaccion-tiempo-real/
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── WebcamCapture.jsx
+│   │   │   │   │   ├── AudioRecorder.jsx
+│   │   │   │   │   ├── EmotionTimeline.jsx
+│   │   │   │   │   ├── AttentionGraph.jsx
+│   │   │   │   │   └── SessionControls.jsx
+│   │   │   │   ├── hooks/
+│   │   │   │   │   ├── useWebcam.js
+│   │   │   │   │   ├── useAudioCapture.js
+│   │   │   │   │   └── useRealTimeAnalysis.js
+│   │   │   │   ├── services/
+│   │   │   │   │   ├── videoAnalysisService.js
+│   │   │   │   │   └── audioTranscriptionService.js
+│   │   │   │   └── utils/
+│   │   │   │       ├── emotionMapping.js
+│   │   │   │       └── mediaValidation.js
+│   │   │   │
+│   │   │   ├── modulo3-perfil-integral/
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── StudentProfile.jsx
+│   │   │   │   │   ├── StrengthsWeaknesses.jsx
+│   │   │   │   │   ├── LearningStyleAnalysis.jsx
+│   │   │   │   │   └── ProgressSummary.jsx
+│   │   │   │   ├── services/
+│   │   │   │   │   └── profileService.js
+│   │   │   │   └── utils/
+│   │   │   │       └── dataAggregation.js
+│   │   │   │
+│   │   │   └── modulo4-reportes-personalizados/
+│   │   │       ├── components/
+│   │   │       │   ├── ReportGenerator.jsx
+│   │   │       │   ├── TemplateSelector.jsx
+│   │   │       │   ├── ContentCustomizer.jsx
+│   │   │       │   └── DataVisualization.jsx
+│   │   │       ├── services/
+│   │   │       │   ├── reportService.js
+│   │   │       │   └── templateService.js
+│   │   │       └── utils/
+│   │   │           └── chartHelpers.js
+│   │   │
+│   │   ├── pages/                        # Páginas principales
+│   │   │   ├── Home.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── AnalisisProgreso.jsx
+│   │   │   ├── SesionTiempoReal.jsx
+│   │   │   ├── PerfilEstudiante.jsx
+│   │   │   └── Reportes.jsx
+│   │   │
+│   │   ├── contexts/                     # Context API
+│   │   │   ├── AuthContext.jsx
+│   │   │   ├── StudentContext.jsx
+│   │   │   └── ThemeContext.jsx
+│   │   │
+│   │   ├── hooks/                        # Custom hooks globales
+│   │   │   ├── useAuth.js
+│   │   │   ├── useApi.js
+│   │   │   └── useNotifications.js
+│   │   │
+│   │   ├── services/                     # Servicios de API
+│   │   │   ├── api.js                    # Configuración base de Axios
+│   │   │   ├── authService.js
+│   │   │   └── storageService.js
+│   │   │
+│   │   ├── utils/                        # Utilidades
+│   │   │   ├── constants.js
+│   │   │   ├── validators.js
+│   │   │   └── formatters.js
+│   │   │
+│   │   ├── styles/                       # Estilos globales
+│   │   │   ├── global.css
+│   │   │   ├── variables.css
+│   │   │   └── tailwind.css
+│   │   │
+│   │   ├── App.jsx                       # Componente principal
+│   │   ├── index.jsx                     # Punto de entrada
+│   │   └── routes.jsx                    # Configuración de rutas
+│   │
+│   ├── .env.example                      # Variables de entorno ejemplo
+│   ├── .gitignore
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── tailwind.config.js
+│   └── README.md
+│
+├── 📁 backend/                           # Servidor Python/Flask
+│   ├── app/
+│   │   ├── __init__.py                   # Inicialización de Flask
+│   │   │
+│   │   ├── models/                       # Modelos de datos (SQLAlchemy)
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py
+│   │   │   ├── document.py
+│   │   │   ├── text_analysis.py
+│   │   │   ├── video_session.py
+│   │   │   ├── audio_transcription.py
+│   │   │   ├── attention_metrics.py
+│   │   │   ├── emotion_data.py
+│   │   │   ├── student_profile.py
+│   │   │   └── report.py
+│   │   │
+│   │   ├── controllers/                  # Lógica de negocio
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_controller.py
+│   │   │   ├── document_controller.py
+│   │   │   ├── analysis_controller.py
+│   │   │   ├── video_controller.py
+│   │   │   ├── audio_controller.py
+│   │   │   ├── profile_controller.py
+│   │   │   └── report_controller.py
+│   │   │
+│   │   ├── services/                     # Servicios de IA y procesamiento
+│   │   │   ├── __init__.py
+│   │   │   │
+│   │   │   ├── ai/                       # Servicios de IA
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── gemini_service.py     # Integración con Gemini
+│   │   │   │   ├── nlp_service.py        # Procesamiento de lenguaje
+│   │   │   │   ├── vision_service.py     # Análisis de video/imagen
+│   │   │   │   └── audio_service.py      # Transcripción y análisis
+│   │   │   │
+│   │   │   ├── document_processing/      # Procesamiento de documentos
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── pdf_extractor.py
+│   │   │   │   ├── docx_extractor.py
+│   │   │   │   ├── text_analyzer.py
+│   │   │   │   └── vocabulary_analyzer.py
+│   │   │   │
+│   │   │   ├── video_processing/         # Procesamiento de video
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── face_detection.py
+│   │   │   │   ├── emotion_recognition.py
+│   │   │   │   ├── body_language.py
+│   │   │   │   └── attention_tracker.py
+│   │   │   │
+│   │   │   ├── audio_processing/         # Procesamiento de audio
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── transcription.py
+│   │   │   │   ├── sentiment_analysis.py
+│   │   │   │   └── speech_analyzer.py
+│   │   │   │
+│   │   │   └── report_generation/        # Generación de reportes
+│   │   │       ├── __init__.py
+│   │   │       ├── ppt_generator.py
+│   │   │       ├── docx_generator.py
+│   │   │       ├── data_visualizer.py
+│   │   │       └── content_personalizer.py
+│   │   │
+│   │   ├── routes/                       # Rutas de API
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_routes.py
+│   │   │   ├── document_routes.py
+│   │   │   ├── analysis_routes.py
+│   │   │   ├── video_routes.py
+│   │   │   ├── audio_routes.py
+│   │   │   ├── profile_routes.py
+│   │   │   └── report_routes.py
+│   │   │
+│   │   ├── middleware/                   # Middleware
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_middleware.py
+│   │   │   ├── error_handler.py
+│   │   │   └── validation_middleware.py
+│   │   │
+│   │   ├── utils/                        # Utilidades
+│   │   │   ├── __init__.py
+│   │   │   ├── file_handler.py
+│   │   │   ├── validators.py
+│   │   │   ├── helpers.py
+│   │   │   └── constants.py
+│   │   │
+│   │   └── config/                       # Configuración
+│   │       ├── __init__.py
+│   │       ├── database.py
+│   │       ├── settings.py
+│   │       └── logging_config.py
+│   │
+│   ├── migrations/                       # Migraciones de BD (Alembic)
+│   │   └── versions/
+│   │
+│   ├── tests/                            # Tests
+│   │   ├── __init__.py
+│   │   ├── unit/                         # Tests unitarios
+│   │   │   ├── test_document_processing.py
+│   │   │   ├── test_video_analysis.py
+│   │   │   ├── test_audio_processing.py
+│   │   │   └── test_ai_services.py
+│   │   ├── integration/                  # Tests de integración
+│   │   │   ├── test_api_endpoints.py
+│   │   │   └── test_database.py
+│   │   └── functional/                   # Tests funcionales
+│   │       ├── test_complete_flow.py
+│   │       └── test_user_scenarios.py
+│   │
+│   ├── uploads/                          # Archivos subidos (gitignored)
+│   │   ├── documents/
+│   │   ├── videos/
+│   │   └── audio/
+│   │
+│   ├── generated/                        # Archivos generados (gitignored)
+│   │   ├── reports/
+│   │   └── templates/
+│   │
+│   ├── logs/                             # Logs (gitignored)
+│   │
+│   ├── .env.example                      # Variables de entorno ejemplo
+│   ├── .gitignore
+│   ├── requirements.txt                  # Dependencias Python
+│   ├── run.py                           # Punto de entrada
+│   ├── pytest.ini                       # Configuración de pytest
+│   └── README.md
+│
+├── 📁 database/                          # Scripts y diseño de BD
+│   ├── schema/
+│   │   ├── 01_create_users.sql
+│   │   ├── 02_create_documents.sql
+│   │   ├── 03_create_analysis_tables.sql
+│   │   ├── 04_create_session_tables.sql
+│   │   └── 05_create_report_tables.sql
+│   ├── seeds/                            # Datos de prueba
+│   │   └── demo_data.sql
+│   └── diagrams/
+│       └── er_diagram.png
+│
+├── 📁 docs/                              # Documentación
+│   ├── arquitectura/
+│   │   ├── arquitectura_general.md
+│   │   ├── flujo_de_datos.md
+│   │   └── decisiones_tecnicas.md
+│   ├── modulos/
+│   │   ├── modulo1_analisis_progreso.md
+│   │   ├── modulo2_interaccion_tiempo_real.md
+│   │   ├── modulo3_perfil_integral.md
+│   │   └── modulo4_reportes_personalizados.md
+│   ├── api/
+│   │   ├── endpoints.md
+│   │   └── ejemplos_requests.md
+│   ├── guias/
+│   │   ├── instalacion.md
+│   │   ├── configuracion.md
+│   │   └── despliegue.md
+│   └── prompts/                          # Prompts para IA
+│       ├── analisis_texto.md
+│       ├── analisis_emociones.md
+│       └── generacion_reportes.md
+│
+├── 📁 scripts/                           # Scripts de utilidad
+│   ├── setup_environment.sh
+│   ├── start_dev.sh
+│   ├── run_tests.sh
+│   └── deploy.sh
+│
+├── 📁 .github/                           # GitHub Actions
+│   └── workflows/
+│       ├── ci.yml
+│       └── deploy.yml
+│
+├── .gitignore                            # Git ignore global
+├── README.md                             # README principal
+├── LICENSE
+├── CONTRIBUTING.md
+└── CHANGELOG.md
+```
+
+## 📋 Notas Importantes
+
+### Módulos Principales
+- **Módulo 1**: Análisis de Progreso Académico
+- **Módulo 2**: Interacción en Tiempo Real (Video + Audio)
+- **Módulo 3**: Perfil Integral del Estudiante
+- **Módulo 4**: Generador de Reportes Personalizados
+
+### Tecnologías Clave
+- **Frontend**: React + Tailwind CSS
+- **Backend**: Python + Flask + SQLAlchemy
+- **Base de Datos**: MySQL
+- **IA**: Google Gemini API + DeepFace
+- **Testing**: Pytest + Coverage
+
+### Carpetas Importantes a .gitignore
+- `/backend/uploads/`
+- `/backend/generated/`
+- `/backend/logs/`
+- `/frontend/build/`
+- `/frontend/node_modules/`
+- `__pycache__/`
+- `.env`

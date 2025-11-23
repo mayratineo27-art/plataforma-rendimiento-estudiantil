@@ -4,6 +4,7 @@ Plataforma Integral de Rendimiento Estudiantil
 """
 
 from flask import Blueprint, request, jsonify
+from werkzeug.security import generate_password_hash
 from app import db
 from app.models.user import User
 from datetime import datetime
@@ -43,8 +44,8 @@ def register():
         # Verificar si el usuario ya existe
         if User.query.filter_by(email=data['email']).first():
             return jsonify({
-                'error': True,
-                'message': 'El email ya está registrado'
+                'success': False,
+                'message': 'El correo electrónico ya está registrado'
             }), 400
         
         if User.query.filter_by(username=data['username']).first():
@@ -57,7 +58,7 @@ def register():
         new_user = User(
             email=data['email'],
             username=data['username'],
-            password=data['password'],
+            password=generate_password_hash(data['password']),
             first_name=data['first_name'],
             last_name=data['last_name'],
             student_code=data.get('student_code'),
@@ -78,8 +79,8 @@ def register():
     except Exception as e:
         db.session.rollback()
         return jsonify({
-            'error': True,
-            'message': f'Error al registrar usuario: {str(e)}'
+            'success': False,
+            'message': str(e)
         }), 500
 
 

@@ -1,7 +1,9 @@
-"# Punto de entrada"
+// frontend/src/index.jsx
+// Punto de entrada de la aplicación React
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './styles/tailwind.css';
+import './styles/index.css';
 import App from './App';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

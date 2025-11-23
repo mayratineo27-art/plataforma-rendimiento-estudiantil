@@ -1,60 +1,127 @@
-import React, { useState, useEffect } from 'react';
-// import './App.css';  // ← ELIMINA O COMENTA ESTA LÍNEA
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate, Outlet } from 'react-router-dom'; // 👈 Se añadió Outlet
+
+// Importación de Páginas
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+// import AnalisisProgreso from './pages/AnalisisProgreso'; // Ya no se usa en esta ruta
+import SesionTiempoReal from './pages/SesionTiempoReal';
+import PerfilEstudiante from './pages/PerfilEstudiante';
+import Reportes from './pages/Reportes';
+import AcademicDashboard from './pages/AcademicDashboard'; // 👈 Tu nuevo módulo
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState('Verificando...');
-
-  useEffect(() => {
-    // Verificar conexión con el backend
-    fetch('http://localhost:5000/')
-      .then(res => res.json())
-      .then(data => {
-        setBackendStatus('✅ Conectado');
-        console.log('Backend response:', data);
-      })
-      .catch(err => {
-        setBackendStatus('❌ No conectado');
-        console.error('Error conectando al backend:', err);
-      });
-  }, []);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-blue-600 mb-4">
-            🎓 Plataforma Integral de Rendimiento Estudiantil
-          </h1>
+    <Router>
+      <Routes>
+        {/* Rutas públicas */}
+        <Route path="/home" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Rutas protegidas */}
+        <Route path="/" element={<ProtectedLayout />}>
+          <Route index element={<Dashboard />} />
           
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-gray-700 mb-2">
-              <strong>Backend:</strong> {backendStatus}
-            </p>
-            <p className="text-sm text-gray-500">
-              http://localhost:5000
-            </p>
-          </div>
+          {/* 🆕 AQUÍ ESTÁ EL CAMBIO: Módulo 1 - Asistente Académico */}
+          <Route path="analisis" element={<AcademicDashboard />} />
+          
+          <Route path="sesion" element={<SesionTiempoReal />} />
+          <Route path="perfil" element={<PerfilEstudiante />} />
+          <Route path="reportes" element={<Reportes />} />
+        </Route>
 
-          <div className="mt-6 text-left">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">
-              🚀 Estado del Sistema
-            </h2>
-            <ul className="space-y-2 text-gray-600">
-              <li>✅ Frontend iniciado correctamente</li>
-              <li>✅ Backend Flask corriendo</li>
-              <li>⏳ Módulos en desarrollo...</li>
-            </ul>
-          </div>
-
-          <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 font-semibold">
-              🎉 ¡Sistema listo para desarrollo!
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+        {/* Ruta catch-all (404) redirige a home */}
+        <Route path="*" element={<Navigate to="/home" replace />} />
+      </Routes>
+    </Router>
   );
 }
+
+// Layout con navegación
+const ProtectedLayout = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Aquí podrías añadir lógica para limpiar cookies si fuera necesario
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <nav className="bg-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => navigate('/')}>
+                <span className="text-2xl font-bold text-blue-600">
+                  🎓 Matriz de Progreso
+                </span>
+              </div>
+
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <NavLink to="/">⚛️ Nodo Operacional</NavLink>
+                <NavLink to="/analisis">📄 Nodo Digital</NavLink> {/* Ahora lleva a AcademicDashboard */}
+                <NavLink to="/sesion">🎥 Stream Multimedia</NavLink>
+                <NavLink to="/perfil">👤 Avatar Personal</NavLink>
+                <NavLink to="/reportes">📊 Análisis Inteligente</NavLink>
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <div className="hidden md:block mr-4 text-sm text-gray-500">
+                {/* Opcional: Mostrar nombre de usuario si está en localStorage */}
+                {JSON.parse(localStorage.getItem('user'))?.username || 'Estudiante'}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition flex items-center gap-2"
+              >
+                🚪 Desconexión 
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Contenido Principal */}
+      <main className="py-6">
+        {/* 🚨 IMPORTANTE: 
+            Usamos <Outlet /> aquí. Esto le dice a React Router:
+            "Renderiza aquí el componente hijo que coincida con la ruta definida en App()" 
+        */}
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+
+// Componente NavLink reutilizable para navegación
+// Usamos useLocation para resaltar la pestaña activa
+import { useLocation } from 'react-router-dom';
+
+const NavLink = ({ to, children, ...props }) => {
+  const location = useLocation();
+  // Verifica si la ruta actual coincide con el link para activarlo visualmente
+  const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
+
+  return (
+    <Link
+      to={to}
+      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition ${
+        isActive 
+          ? 'border-blue-500 text-gray-900' 
+          : 'border-transparent text-gray-500 hover:border-blue-300 hover:text-gray-700'
+      }`}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+};
 
 export default App;
