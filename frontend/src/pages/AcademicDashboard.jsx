@@ -2,9 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, Calendar, CheckCircle, Plus, Brain, FileText, 
   Upload, RefreshCw, Trash2, CheckSquare, Square, Clock, X,
-  Download, Search, Filter, TrendingUp, BookMarked, Layers
+  Download, Search, Filter, TrendingUp, BookMarked, Layers,
+  FolderOpen, BarChart3
 } from 'lucide-react';
-import Stopwatch from '../components/Stopwatch'; 
+import Stopwatch from '../components/Stopwatch';
+import TimelineViewer from '../components/TimelineViewer';
+import ModernProjectManager from '../components/Projects/ModernProjectManager'; // 🆕 Proyectos mejorado
+import EvolutionChart from '../components/EvolutionChart';
+import TimelineCreator from '../components/Timeline/TimelineCreator'; // 🆕 Timeline con creador
+import SyllabusAnalyzerPro from '../components/Syllabus/SyllabusAnalyzerPro'; // 🆕 Syllabus con historial
+import CourseManagerPro from '../components/Courses/CourseManagerPro'; // 🆕 Cursos con iconos 
 
 // --- COMPONENTE HERRAMIENTAS IA ---
 const StudyTools = () => {
@@ -305,6 +312,7 @@ const AcademicDashboard = () => {
   const [courses, setCourses] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
   const [uploadingId, setUploadingId] = useState(null);
   
   // Estados para el formulario de Crear Curso
@@ -327,11 +335,13 @@ const AcademicDashboard = () => {
     try {
       const res = await fetch(`/api/academic/user/${USER_ID}/dashboard`);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar dashboard');
       setCourses(data.courses || []);
       setTasks(data.pending_tasks || []);
       setLoading(false);
     } catch (error) {
       console.error(error);
+      setErrorMsg(error.message || 'No se pudo cargar el dashboard');
       setLoading(false);
     }
   };
@@ -351,17 +361,18 @@ const AcademicDashboard = () => {
             color: '#' + Math.floor(Math.random()*16777215).toString(16) 
         })
       });
-      
+      const data = await res.json();
       if (res.ok) {
         setIsCreating(false);
         setNewCourseName('');
         setNewCourseProf('');
         loadData(); // Recargar datos inmediatamente
       } else {
-        alert("Error al crear curso");
+        alert(`Error al crear curso: ${data.error || 'Desconocido'}`);
       }
     } catch (error) {
       console.error(error);
+      alert(`Error de conexión: ${error.message}`);
     }
   };
 
@@ -379,7 +390,7 @@ const AcademicDashboard = () => {
         alert(`✅ ${data.tasks_created} tareas creadas.`);
         loadData();
       } else {
-        alert("Error: " + data.error);
+        alert("Error: " + (data.error || 'No se pudo procesar el sílabo'));
       }
     } catch (e) { alert("Error de conexión"); }
     finally { setUploadingId(null); }
@@ -423,6 +434,11 @@ const AcademicDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      {errorMsg && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm">
+          {errorMsg}
+        </div>
+      )}
       
       {/* Header mejorado */}
       <div className="mb-8 bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
@@ -451,19 +467,43 @@ const AcademicDashboard = () => {
         </div>
       </div>
 
-      {/* Navegación Tabs mejorada */}
-      <div className="flex gap-3 mb-8 bg-white rounded-xl shadow-sm p-2 border border-gray-200">
+      {/* Navegación Tabs mejorada con 6 pestañas */}
+      <div className="flex gap-2 mb-8 bg-white rounded-xl shadow-sm p-2 border border-gray-200 overflow-x-auto">
         <button 
             onClick={() => setActiveTab('dashboard')} 
-            className={`flex-1 py-3 px-6 font-semibold text-sm flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+            className={`flex-1 min-w-[140px] py-3 px-4 font-semibold text-xs flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
         >
-          <Calendar size={18} /> Gestión Académica
+          <Calendar size={16} /> Gestión
         </button>
         <button 
             onClick={() => setActiveTab('tools')} 
-            className={`flex-1 py-3 px-6 font-semibold text-sm flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'tools' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+            className={`flex-1 min-w-[140px] py-3 px-4 font-semibold text-xs flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'tools' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
         >
-          <Brain size={18} /> Herramientas IA
+          <Brain size={16} /> Herramientas IA
+        </button>
+        <button 
+            onClick={() => setActiveTab('timeline')} 
+            className={`flex-1 min-w-[140px] py-3 px-4 font-semibold text-xs flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'timeline' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+        >
+          <Calendar size={16} /> Línea Tiempo
+        </button>
+        <button 
+            onClick={() => setActiveTab('syllabus')} 
+            className={`flex-1 min-w-[140px] py-3 px-4 font-semibold text-xs flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'syllabus' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+        >
+          <FileText size={16} /> Syllabus
+        </button>
+        <button 
+            onClick={() => setActiveTab('projects')} 
+            className={`flex-1 min-w-[140px] py-3 px-4 font-semibold text-xs flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'projects' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+        >
+          <FolderOpen size={16} /> Proyectos
+        </button>
+        <button 
+            onClick={() => setActiveTab('evolution')} 
+            className={`flex-1 min-w-[140px] py-3 px-4 font-semibold text-xs flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'evolution' ? 'bg-gradient-to-r from-teal-600 to-green-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+        >
+          <BarChart3 size={16} /> Evolución
         </button>
       </div>
 
@@ -623,9 +663,23 @@ const AcademicDashboard = () => {
           </div>
 
         </div>
-      ) : (
+      ) : activeTab === 'tools' ? (
         <StudyTools />
-      )}
+      ) : activeTab === 'timeline' ? (
+        /* 🆕 NUEVO: Creador de líneas de tiempo con IA y gestión completa */
+        <TimelineCreator userId={USER_ID} />
+      ) : activeTab === 'syllabus' ? (
+        /* 🆕 NUEVO: Analizador de sílabos con historial y progreso */
+        <SyllabusAnalyzerPro userId={USER_ID} />
+      ) : activeTab === 'gestion' ? (
+        /* 🆕 NUEVO: Gestor de cursos con iconos y categorías */
+        <CourseManagerPro userId={USER_ID} />
+      ) : activeTab === 'projects' ? (
+        /* 🆕 NUEVO: Gestor de proyectos moderno con mensajes creativos y cronómetro mejorado */
+        <ModernProjectManager userId={USER_ID} courses={courses} />
+      ) : activeTab === 'evolution' ? (
+        <EvolutionChart userId={USER_ID} courses={courses} />
+      ) : null}
     </div>
   );
 };

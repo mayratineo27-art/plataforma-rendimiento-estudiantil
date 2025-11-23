@@ -7,12 +7,20 @@ import os
 from werkzeug.utils import secure_filename
 from app.models.audio_transcription import AudioTranscription
 from app.models.video_session import VideoSession
-from app.services.ai.audio_service import AudioService
 from app import db
+
+# Importación condicional de servicios de audio
+try:
+    from app.services.ai.audio_service import AudioService
+    AUDIO_SERVICE_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️  Audio service no disponible: {e}")
+    AUDIO_SERVICE_AVAILABLE = False
+    AudioService = None
 
 class AudioController:
     def __init__(self):
-        self.audio_service = AudioService()
+        self.audio_service = AudioService() if AUDIO_SERVICE_AVAILABLE else None
         self.upload_folder = 'uploads/audio'
         
         # Crear carpeta si no existe

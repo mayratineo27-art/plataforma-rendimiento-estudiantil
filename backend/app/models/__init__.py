@@ -73,6 +73,9 @@ __all__ = [
 from app.models.academic import AcademicCourse, AcademicTask 
 from app.models.timer import StudyTimer
 from app.models.project import Project, TimeSession
+from app.models.timeline import Timeline
+from app.models.timeline_step import TimelineStep
+from app.models.syllabus import SyllabusAnalysis
 
 __all__ = [
     'User',
@@ -84,7 +87,10 @@ __all__ = [
     'AcademicTask',   # 🆕
     'StudyTimer',     # 🆕
     'Project',        # 🆕
-    'TimeSession'     # 🆕
+    'TimeSession',    # 🆕
+    'Timeline',       # 🆕
+    'TimelineStep',   # 🆕
+    'SyllabusAnalysis' # 🆕
 ]
 
 # ... import final ...
@@ -92,5 +98,6 @@ from app.models import (
     User, Document, TextAnalysis, VideoSession, EmotionData,
     AttentionMetrics, AudioSession, AudioTranscription,
     StudentProfile, Report, GeneratedTemplate, AIInteraction,
-    AcademicCourse, AcademicTask, StudyTimer, Project, TimeSession # 🆕
+    AcademicCourse, AcademicTask, StudyTimer, Project, TimeSession,
+    Timeline, TimelineStep, SyllabusAnalysis # 🆕
 )

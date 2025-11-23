@@ -10,10 +10,13 @@ from app import db
 from app.models.video_session import VideoSession
 from app.models.emotion_data import EmotionData
 from app.models.attention_metrics import AttentionMetrics
-from app.services.video_processing.emotion_recognition import emotion_service
 import cv2
 import numpy as np
 import base64
+
+# Importación de servicios de video - TODOS ACTIVOS
+from app.services.video_processing.emotion_recognition import emotion_service
+EMOTION_SERVICE_AVAILABLE = True
 
 
 class VideoController:

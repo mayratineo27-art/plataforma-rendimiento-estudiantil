@@ -22,9 +22,19 @@ class StudyToolsService:
 
     @staticmethod
     def _get_model():
-        """Obtiene el modelo configurado de Gemini"""
-        model_name = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
-        return genai.GenerativeModel(model_name)
+      """Obtiene el modelo configurado de Gemini con fallback seguro"""
+      preferred = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+      try:
+        return genai.GenerativeModel(preferred)
+      except Exception as _:
+        # Fallbacks por compatibilidad de librería
+        for candidate in ['gemini-1.5-flash', 'gemini-pro']:
+          try:
+            return genai.GenerativeModel(candidate)
+          except Exception:
+            continue
+        # Último recurso: relanzar
+        return genai.GenerativeModel(preferred)
 
     @staticmethod
     def generate_mind_map(topic_text, context="General"):

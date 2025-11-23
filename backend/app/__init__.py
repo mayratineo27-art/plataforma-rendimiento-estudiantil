@@ -124,7 +124,7 @@ def register_blueprints(app):
     except ImportError as e:
         print(f"   ⚠️  Video/Audio routes no disponible: {e}")
     except Exception as e:
-        print(f"   ❌ Error al registrar Video/Audio routes: {e}")
+        print(f"   ⚠️  Error al registrar Video/Audio routes: {e}")
     
     # ========== DASHBOARD ==========
     try:
@@ -196,6 +196,16 @@ def register_blueprints(app):
     except Exception as e:
         print(f"   ❌ Error al registrar Project routes: {e}")
     
+    # ========== LÍNEAS DE TIEMPO ==========
+    try:
+        from app.routes.timeline_routes import timeline_bp
+        app.register_blueprint(timeline_bp)
+        print("   ✅ Timeline routes: /api/timelines")
+    except ImportError as e:
+        print(f"   ⚠️  Timeline routes no disponible: {e}")
+    except Exception as e:
+        print(f"   ❌ Error al registrar Timeline routes: {e}")
+    
     # ========== RUTAS DE PRUEBA ==========
     @app.route('/')
     def index():
@@ -266,6 +276,12 @@ def import_models():
         print("   ✅ Project Models (Project, TimeSession)")
     except ImportError as e:
         print(f"   ⚠️  Project Models: {e}")
+    
+    try:
+        from app.models.timeline import Timeline
+        print("   ✅ Timeline Model")
+    except ImportError as e:
+        print(f"   ⚠️  Timeline Model: {e}")
 
     print("✅ Modelos importados\n")
     

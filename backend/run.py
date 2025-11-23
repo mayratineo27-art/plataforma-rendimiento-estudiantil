@@ -23,18 +23,7 @@ if __name__ == '__main__':
     Presiona CTRL+C para detener el servidor
     """)
     
-    try:
-        # Intentar usar waitress (mejor para Windows)
-        from waitress import serve
-        print("    ✓ Usando servidor Waitress")
-        print()
-        serve(app, host='127.0.0.1', port=port)
-    except ImportError:
-        print("    ⚠️  Waitress no instalado, instalando...")
-        import subprocess
-        import sys
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'waitress'])
-        from waitress import serve
-        print("    ✓ Waitress instalado y ejecutando")
-        print()
-        serve(app, host='127.0.0.1', port=port)
+    # Usar Flask directamente (temporalmente para debug)
+    print("    ✓ Usando servidor Flask")
+    print()
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)

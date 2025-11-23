@@ -68,6 +68,14 @@ class Project(db.Model):
         minutes = (self.total_time_seconds % 3600) // 60
         seconds = self.total_time_seconds % 60
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    
+    @staticmethod
+    def format_time_static(seconds):
+        """Método estático para formatear tiempo sin instancia"""
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
 
 class TimeSession(db.Model):
@@ -79,16 +87,20 @@ class TimeSession(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
     # Información de la sesión
-    duration_seconds = db.Column(db.Integer, nullable=False)  # Duración de esta sesión
+    duration_seconds = db.Column(db.Integer, nullable=False, default=0)  # Duración de esta sesión
     notes = db.Column(db.Text)  # Notas opcionales sobre qué se hizo en esta sesión
     
     # Control de sesión activa
     is_active = db.Column(db.Boolean, default=False)
+    is_paused = db.Column(db.Boolean, default=False)  # Si está pausada
     started_at = db.Column(db.DateTime)
     paused_at = db.Column(db.DateTime)
+    resumed_at = db.Column(db.DateTime)
+    last_activity_at = db.Column(db.DateTime)  # Última actividad detectada
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ended_at = db.Column(db.DateTime)
     
     # Relaciones
     user = db.relationship('User', backref='time_sessions')
@@ -102,8 +114,12 @@ class TimeSession(db.Model):
             'duration_formatted': self.format_duration(),
             'notes': self.notes,
             'is_active': self.is_active,
+            'is_paused': self.is_paused,
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'paused_at': self.paused_at.isoformat() if self.paused_at else None,
+            'resumed_at': self.resumed_at.isoformat() if self.resumed_at else None,
+            'last_activity_at': self.last_activity_at.isoformat() if self.last_activity_at else None,
+            'ended_at': self.ended_at.isoformat() if self.ended_at else None,
             'created_at': self.created_at.isoformat()
         }
 
