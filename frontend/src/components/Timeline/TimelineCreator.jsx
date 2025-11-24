@@ -73,20 +73,26 @@ const TimelineCreator = ({ userId = 1 }) => {
   };
 
   const handleCreateTimeline = async () => {
+    console.log('🎯 handleCreateTimeline iniciado');
+    console.log('📋 formData:', formData);
+    console.log('📋 userId:', userId);
+    
     if (!formData.course_id || !formData.title) {
+      console.warn('⚠️ Validación falló - falta course_id o title');
       alert('Por favor completa el curso y título');
       return;
     }
 
     try {
       setLoading(true);
+      console.log('⏳ Loading activado');
 
       const payload = {
-        user_id: userId,
-        course_id: formData.course_id,
+        user_id: parseInt(userId),
+        course_id: parseInt(formData.course_id),
         title: formData.title,
         description: formData.description,
-        timeline_type: 'course', // Tipo de timeline: 'course', 'project', o 'academic'
+        timeline_type: 'course',
         end_date: formData.end_date || null,
         steps: formData.generate_with_ai 
           ? [] 
@@ -102,17 +108,26 @@ const TimelineCreator = ({ userId = 1 }) => {
         payload.ai_context = formData.ai_context || formData.title;
       }
 
+      console.log('📤 Enviando payload:', JSON.stringify(payload, null, 2));
+      console.log('🌐 URL:', 'http://localhost:5000/api/timeline/create');
+
       const response = await axios.post('http://localhost:5000/api/timeline/create', payload);
 
+      console.log('✅ Respuesta recibida:', response.data);
       alert(`✅ Línea de tiempo creada: ${response.data.timeline.title}`);
       setShowCreateModal(false);
       resetForm();
       loadTimelines();
     } catch (error) {
-      console.error('Error creando línea de tiempo:', error);
-      const errorMsg = error.response?.data?.error || 'Error desconocido';
+      console.error('❌ ERROR COMPLETO:', error);
+      console.error('❌ Error.response:', error.response);
+      console.error('❌ Error.response.data:', error.response?.data);
+      console.error('❌ Error.message:', error.message);
+      
+      const errorMsg = error.response?.data?.error || error.message || 'Error desconocido';
       alert(`❌ Error al crear la línea de tiempo: ${errorMsg}`);
     } finally {
+      console.log('🏁 Finalizando - desactivando loading');
       setLoading(false);
     }
   };

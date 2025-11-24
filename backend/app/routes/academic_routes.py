@@ -123,11 +123,15 @@ def create_mindmap():
         return jsonify({"error": "El texto es obligatorio"}), 400
 
     try:
+        print(f"📊 Generando mapa mental. Texto: {text[:100]}... Contexto: {context}")
         result = StudyToolsService.generate_mind_map(text, context)
+        print(f"✅ Mapa mental generado exitosamente")
         return jsonify({"mindmap": result})
     except Exception as e:
-        print(f"Error generando mapa: {e}")
-        return jsonify({"error": "Error interno en la IA"}), 500
+        print(f"❌ Error generando mapa mental: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Error interno en la IA: {str(e)}"}), 500
 
 @academic_bp.route('/tools/summary', methods=['POST'])
 def create_summary():
@@ -142,10 +146,15 @@ def create_summary():
         return jsonify({"error": "El texto es obligatorio"}), 400
 
     try:
+        print(f"📝 Generando resumen. Tipo: {summary_type}, Texto: {text[:100]}...")
         result = StudyToolsService.generate_summary(text, summary_type)
+        print(f"✅ Resumen generado exitosamente")
         return jsonify({"summary": result})
     except Exception as e:
-        return jsonify({"error": "Error interno en la IA"}), 500
+        print(f"❌ Error generando resumen: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Error interno en la IA: {str(e)}"}), 500
 
 @academic_bp.route('/tools/timeline', methods=['POST'])
 def create_timeline():

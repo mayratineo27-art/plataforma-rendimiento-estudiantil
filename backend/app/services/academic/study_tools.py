@@ -49,8 +49,15 @@ class StudyToolsService:
             dict: Estructura JSON del mapa mental
         """
         try:
+            print(f"🧠 Generando mapa mental...")
+            print(f"  📝 Tema: {topic_text[:100]}")
+            print(f"  📚 Contexto: {context}")
+            
             StudyToolsService._configure_gemini()
+            print(f"  ✅ Gemini configurado")
+            
             model = StudyToolsService._get_model()
+            print(f"  ✅ Modelo obtenido: {model}")
             
             prompt = f"""
 Eres un experto en pedagogía visual y mapas mentales académicos.
@@ -87,16 +94,23 @@ REGLAS CRÍTICAS:
 
 GENERA EL MAPA MENTAL:
 """
-
+            
+            print(f"  🚀 Enviando a Gemini...")
             response = model.generate_content(prompt)
+            print(f"  ✅ Respuesta recibida: {len(response.text)} caracteres")
+            
             clean_text = response.text.replace("```json", "").replace("```", "").strip()
+            print(f"  🔧 Texto limpio: {clean_text[:200]}...")
             
             # Intenta parsear el JSON
             mind_map_data = json.loads(clean_text)
+            print(f"  ✅ JSON parseado correctamente")
             
             # Validar estructura mínima
             if 'root' not in mind_map_data:
                 raise ValueError("El mapa mental no tiene nodo raíz")
+            
+            print(f"  ✅ Mapa mental generado con raíz: {mind_map_data.get('root')}")
                 
             return mind_map_data
 
@@ -180,8 +194,15 @@ GENERA EL RESUMEN:
             dict: Estructura JSON de la línea de tiempo
         """
         try:
+            print(f"⏱️ Generando timeline...")
+            print(f"  📝 Tema: {topic[:100]}")
+            print(f"  📋 Tipo: {timeline_type}")
+            
             StudyToolsService._configure_gemini()
+            print(f"  ✅ Gemini configurado")
+            
             model = StudyToolsService._get_model()
+            print(f"  ✅ Modelo obtenido")
             
             if timeline_type == "academic":
                 instruction = """
@@ -238,15 +259,22 @@ REGLAS:
 
 GENERA LA LÍNEA DE TIEMPO:
 """
-
+            
+            print(f"  🚀 Enviando a Gemini...")
             response = model.generate_content(prompt)
+            print(f"  ✅ Respuesta recibida: {len(response.text)} caracteres")
+            
             clean_text = response.text.replace("```json", "").replace("```", "").strip()
+            print(f"  🔧 Texto limpio: {clean_text[:200]}...")
             
             timeline_data = json.loads(clean_text)
+            print(f"  ✅ JSON parseado correctamente")
             
             # Validar estructura
             if 'milestones' not in timeline_data:
                 raise ValueError("La línea de tiempo no tiene milestones")
+            
+            print(f"  ✅ Timeline generado con {len(timeline_data['milestones'])} milestones")
                 
             return timeline_data
 
@@ -261,6 +289,8 @@ GENERA LA LÍNEA DE TIEMPO:
             }
         except Exception as e:
             print(f"❌ Error generando línea de tiempo: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "title": "Error",
                 "type": timeline_type,

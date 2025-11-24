@@ -18,12 +18,18 @@ if __name__ == '__main__':
     ╚══════════════════════════════════════════════════════════════╝
     
     🚀 Servidor corriendo en: http://localhost:{port}
-    🔧 Modo: development
+    🔧 Modo: development (DEBUG ACTIVADO)
     
     Presiona CTRL+C para detener el servidor
     """)
     
-    # Usar Flask directamente (temporalmente para debug)
-    print("    ✓ Usando servidor Flask")
-    print()
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    # Configurar logging
+    import logging
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+    )
+    
+    print("    ✓ Usando servidor Flask con DEBUG")
+    print("    ✓ Logging activado\n")
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)

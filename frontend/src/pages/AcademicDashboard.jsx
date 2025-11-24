@@ -27,7 +27,7 @@ const StudyTools = () => {
   const USER_ID = 1; 
 
   useEffect(() => {
-    fetch(`/api/academic/user/${USER_ID}/dashboard`)
+    fetch(`http://localhost:5000/api/academic/user/${USER_ID}/dashboard`)
       .then(res => res.json())
       .then(data => setCourses(data.courses || []))
       .catch(err => console.error(err));
@@ -55,25 +55,71 @@ const StudyTools = () => {
   };
 
   const handleGenerate = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim()) {
+      alert('Por favor ingresa texto para procesar');
+      return;
+    }
     setLoading(true);
     setResult(null);
 
     const courseName = courses.find(c => c.id == selectedCourseId)?.name || "General";
-    const endpoint = mode === 'summary' ? '/api/academic/tools/summary' : '/api/academic/tools/mindmap';
+    const endpoint = mode === 'summary' 
+      ? 'http://localhost:5000/api/academic/tools/summary' 
+      : 'http://localhost:5000/api/academic/tools/mindmap';
 
     try {
+      console.log('📤 Enviando solicitud:', { endpoint, text: inputText.substring(0, 100), context: courseName });
+      
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: inputText, context: `Curso de ${courseName}` })
       });
+      
+      console.log('📥 Respuesta del servidor:', res.status, res.statusText);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('❌ Error del servidor:', errorText);
+        throw new Error(`Error del servidor: ${res.status} - ${errorText}`);
+      }
+      
       const data = await res.json();
+      console.log('📦 Datos recibidos:', data);
+      
+      if (data.error) {
+        console.error('❌ Error en respuesta:', data.error);
+        alert(`Error: ${data.error}`);
+        setLoading(false);
+        return;
+      }
+      
       const resultData = mode === 'mindmap' ? data.mindmap : data.summary;
+      console.log('✅ Resultado extraído:', resultData);
+      
+      if (!resultData) {
+        console.error('❌ No se recibió resultado:', data);
+        alert('No se recibió resultado de la IA. Revisa la consola para más detalles.');
+        setLoading(false);
+        return;
+      }
+      
+      // Validar estructura del mapa mental
+      if (mode === 'mindmap') {
+        if (typeof resultData !== 'object' || (!resultData.root && !resultData.name)) {
+          console.error('❌ Estructura inválida del mapa mental:', resultData);
+          alert('La IA devolvió un formato inválido. Por favor intenta de nuevo.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      console.log('🎉 Resultado válido, actualizando estado');
       setResult(resultData);
       saveToHistory(mode, inputText, resultData);
     } catch (error) {
-      alert("Error al conectar con la IA");
+      console.error('💥 Error completo:', error);
+      alert(`Error al conectar con la IA: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -102,20 +148,29 @@ const StudyTools = () => {
   };
 
   const MindMapNode = ({ node, level = 0 }) => {
-    if (!node) return null;
+    if (!node) {
+      console.warn('⚠️ MindMapNode recibió nodo vacío');
+      return null;
+    }
+    
+    console.log('🔍 Renderizando nodo:', { level, node });
+    
     const colors = [
       'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg',
       'bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-900 border-2 border-blue-300',
       'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-400 transition'
     ];
     const style = colors[level] || colors[2];
+    
+    // Extraer el texto del nodo (puede ser 'root', 'name', o el nodo mismo si es string)
+    const nodeText = node.root || node.name || (typeof node === 'string' ? node : "Nodo");
 
     return (
       <div className="flex flex-col items-center animate-in fade-in slide-in-from-top-2 duration-300">
         <div className={`px-5 py-3 rounded-xl border shadow-md text-center mb-6 font-medium ${style} min-w-[140px] max-w-[280px] transform hover:scale-105 transition-transform cursor-pointer`}>
-          {node.root || node.name || "Nodo"}
+          {nodeText}
         </div>
-        {node.children && node.children.length > 0 && (
+        {node.children && Array.isArray(node.children) && node.children.length > 0 && (
           <div className="flex gap-8 relative">
             <div className="absolute -top-3 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-300 to-transparent mx-auto w-[calc(100%-2rem)]"></div>
             {node.children.map((child, idx) => (
@@ -259,6 +314,7 @@ const StudyTools = () => {
             
             {result && mode === 'mindmap' && (
               <div className="w-full overflow-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {console.log('🎨 Renderizando mapa mental con resultado:', result)}
                 <MindMapNode node={result} />
               </div>
             )}

@@ -20,18 +20,41 @@ timeline_bp = Blueprint('timeline', __name__, url_prefix='/api/timeline')
 @timeline_bp.route('/create', methods=['POST'])
 def create_timeline():
     """Crea una nueva línea de tiempo con opción de generar pasos con IA"""
+    print("=" * 80)
+    print("🚀 PETICIÓN RECIBIDA EN /api/timeline/create")
+    print("=" * 80)
+    
     try:
         data = request.json
+        
+        print(f"📝 Datos recibidos: {data}")
         
         # Validar datos requeridos
         if not data.get('user_id') or not data.get('title'):
             return jsonify({"error": "user_id y title son requeridos"}), 400
         
+        # Convertir course_id y project_id a int o None
+        course_id = None
+        if data.get('course_id'):
+            try:
+                course_id = int(data['course_id'])
+            except (ValueError, TypeError):
+                print(f"⚠️ course_id inválido: {data.get('course_id')}")
+        
+        project_id = None
+        if data.get('project_id'):
+            try:
+                project_id = int(data['project_id'])
+            except (ValueError, TypeError):
+                print(f"⚠️ project_id inválido: {data.get('project_id')}")
+        
+        print(f"✅ IDs convertidos - user_id: {data['user_id']}, course_id: {course_id}, project_id: {project_id}")
+        
         # Crear la línea de tiempo
         new_timeline = Timeline(
-            user_id=data['user_id'],
-            project_id=data.get('project_id'),
-            course_id=data.get('course_id'),
+            user_id=int(data['user_id']),
+            project_id=project_id,
+            course_id=course_id,
             title=data['title'],
             description=data.get('description', ''),
             timeline_type=data.get('timeline_type', 'course'),
@@ -41,12 +64,21 @@ def create_timeline():
         db.session.add(new_timeline)
         db.session.flush()  # Obtener el ID sin hacer commit
         
+        print(f"✅ Timeline creado en memoria con ID: {new_timeline.id}")
+        
         # Generar pasos con IA o usar pasos manuales
         if data.get('generate_with_ai') and AI_AVAILABLE:
             try:
+                print(f"🤖 Generando timeline con IA...")
                 context = data.get('ai_context', data['title'])
                 timeline_type = 'academic' if data.get('timeline_type') == 'project' else 'course'
+                
+                print(f"📋 Contexto: {context}")
+                print(f"📋 Tipo: {timeline_type}")
+                
                 ai_result = StudyToolsService.generate_timeline(context, timeline_type)
+                
+                print(f"✅ Resultado IA: {ai_result}")
                 
                 # Extraer pasos del resultado de la IA
                 generated_steps = []
@@ -54,6 +86,7 @@ def create_timeline():
                 if isinstance(ai_result, dict):
                     # La IA retorna 'milestones', convertirlos a steps
                     if 'milestones' in ai_result:
+                        print(f"📦 Procesando {len(ai_result['milestones'])} milestones")
                         for milestone in ai_result['milestones']:
                             generated_steps.append({
                                 'title': milestone.get('title', ''),
@@ -61,9 +94,13 @@ def create_timeline():
                                 'order': milestone.get('order', len(generated_steps) + 1)
                             })
                     elif 'steps' in ai_result:
+                        print(f"📦 Procesando {len(ai_result['steps'])} steps")
                         generated_steps = ai_result['steps']
                 elif isinstance(ai_result, list):
+                    print(f"📦 Procesando lista de {len(ai_result)} items")
                     generated_steps = ai_result
+                
+                print(f"✅ Pasos generados: {len(generated_steps)}")
                 
                 # Crear TimelineSteps desde los pasos generados por IA
                 for i, step_data in enumerate(generated_steps):
@@ -74,15 +111,17 @@ def create_timeline():
                         order=step_data.get('order', i + 1)
                     )
                     db.session.add(step)
+                    print(f"  ✓ Paso {i+1}: {step_data.get('title', '')}")
                     
             except Exception as e:
-                print(f"Error generando con IA: {e}")
+                print(f"❌ Error generando con IA: {e}")
                 import traceback
                 traceback.print_exc()
                 # Continuar sin pasos si falla la IA
         else:
             # Usar pasos manuales si se proporcionaron
             manual_steps = data.get('steps', [])
+            print(f"📋 Usando {len(manual_steps)} pasos manuales")
             for i, step_data in enumerate(manual_steps):
                 if step_data.get('title'):  # Solo crear si tiene título
                     step = TimelineStep(
@@ -92,8 +131,11 @@ def create_timeline():
                         order=step_data.get('order', i + 1)
                     )
                     db.session.add(step)
+                    print(f"  ✓ Paso manual {i+1}: {step_data['title']}")
         
+        print(f"💾 Guardando en base de datos...")
         db.session.commit()
+        print(f"✅ Timeline guardado exitosamente")
         
         return jsonify({
             "message": "Línea de tiempo creada exitosamente",
@@ -102,7 +144,9 @@ def create_timeline():
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error creando línea de tiempo: {e}")
+        print(f"❌ Error creando línea de tiempo: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
