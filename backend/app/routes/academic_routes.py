@@ -547,3 +547,123 @@ def upload_syllabus_improved(course_id):
         db.session.rollback()
         print(f"Error en upload_syllabus_improved: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# --- 8. EVALUACIÓN DE ESCRITURA ---
+
+try:
+    from app.services.academic.writing_evaluator import WritingEvaluator
+    WRITING_EVALUATOR_AVAILABLE = True
+    print("✅ WritingEvaluator disponible")
+except Exception as e:
+    print(f"⚠️  WritingEvaluator no disponible: {e}")
+    WRITING_EVALUATOR_AVAILABLE = False
+
+
+@academic_bp.route('/tools/evaluate-writing', methods=['POST'])
+def evaluate_writing():
+    """
+    Evalúa la calidad de escritura de un documento
+    
+    Acepta:
+    - document: Archivo actual (TXT, PDF, DOCX)
+    - previous_document: Archivo anterior para comparar (opcional)
+    - user_id: ID del usuario
+    - course_id: ID del curso (opcional)
+    
+    Retorna:
+    - Reporte con métricas, scores y recomendaciones
+    """
+    try:
+        print("=" * 80)
+        print("📝 ENDPOINT: Evaluate Writing")
+        print("=" * 80)
+        
+        if not WRITING_EVALUATOR_AVAILABLE:
+            return jsonify({
+                "error": "Servicio de evaluación de escritura no disponible"
+            }), 503
+        
+        # Validar que se envió un archivo
+        if 'document' not in request.files:
+            return jsonify({"error": "No se envió ningún documento"}), 400
+        
+        current_file = request.files['document']
+        previous_file = request.files.get('previous_document')
+        
+        if current_file.filename == '':
+            return jsonify({"error": "Nombre de archivo vacío"}), 400
+        
+        # Validar extensión
+        allowed_extensions = {'.txt', '.pdf', '.docx', '.md'}
+        current_ext = os.path.splitext(current_file.filename)[1].lower()
+        
+        if current_ext not in allowed_extensions:
+            return jsonify({
+                "error": f"Formato no soportado: {current_ext}. Use: {', '.join(allowed_extensions)}"
+            }), 400
+        
+        print(f"📄 Archivo recibido: {current_file.filename}")
+        
+        # Obtener metadatos
+        user_id = request.form.get('user_id', type=int)
+        course_id = request.form.get('course_id', type=int)
+        
+        print(f"👤 Usuario: {user_id}, 📚 Curso: {course_id}")
+        
+        # Crear carpeta para guardar archivos
+        upload_dir = os.path.join('uploads', 'writing')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generar nombres únicos
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        current_filename = f"current_{timestamp}_{current_file.filename}"
+        current_path = os.path.join(upload_dir, current_filename)
+        
+        # Guardar archivo actual
+        current_file.save(current_path)
+        print(f"💾 Guardado: {current_path}")
+        
+        # Guardar archivo anterior si existe
+        previous_path = None
+        if previous_file and previous_file.filename != '':
+            previous_ext = os.path.splitext(previous_file.filename)[1].lower()
+            
+            if previous_ext in allowed_extensions:
+                previous_filename = f"previous_{timestamp}_{previous_file.filename}"
+                previous_path = os.path.join(upload_dir, previous_filename)
+                previous_file.save(previous_path)
+                print(f"💾 Guardado (anterior): {previous_path}")
+            else:
+                print(f"⚠️  Archivo anterior ignorado (formato inválido)")
+        
+        # Generar reporte
+        metadata = {
+            'user_id': user_id,
+            'course_id': course_id,
+            'timestamp': timestamp
+        }
+        
+        report = WritingEvaluator.generate_report(
+            current_file=current_path,
+            previous_file=previous_path,
+            metadata=metadata
+        )
+        
+        # Limpiar archivos temporales (opcional - comentado para debug)
+        # os.remove(current_path)
+        # if previous_path and os.path.exists(previous_path):
+        #     os.remove(previous_path)
+        
+        print(f"✅ Reporte generado exitosamente")
+        
+        return jsonify({
+            "message": "Evaluación completada",
+            "report": report
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error evaluando escritura: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
