@@ -20,9 +20,10 @@ class Timeline(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     timeline_type = db.Column(
-        db.Enum('academic', 'course', 'project', name='timeline_type'),
+        db.Enum('academic', 'course', 'project', 'free', name='timeline_type'),
         default='project'
     )
+    course_topic = db.Column(db.String(300), nullable=True)  # Tema específico del curso para timelines 'free'
     end_date = db.Column(db.DateTime)  # Fecha límite de la línea de tiempo
     
     # Contenido JSON con los pasos (mantener por compatibilidad)
@@ -67,6 +68,7 @@ class Timeline(db.Model):
             'title': self.title,
             'description': self.description,
             'timeline_type': self.timeline_type,
+            'course_topic': self.course_topic,
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'steps': steps_list,
             'is_visible': self.is_visible,

@@ -58,6 +58,7 @@ def create_timeline():
             title=data['title'],
             description=data.get('description', ''),
             timeline_type=data.get('timeline_type', 'course'),
+            course_topic=data.get('course_topic'),  # Tema específico del curso
             end_date=datetime.fromisoformat(data['end_date']) if data.get('end_date') else None
         )
         
@@ -356,3 +357,126 @@ def delete_timeline(timeline_id):
         db.session.rollback()
         print(f"Error eliminando línea de tiempo: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@timeline_bp.route('/topic/create', methods=['POST'])
+def create_topic_timeline():
+    """
+    Crea una línea de tiempo sobre un tema específico de un curso
+    Esta línea de tiempo no está vinculada a proyectos, solo a temas del curso
+    """
+    print("=" * 80)
+    print("🎯 PETICIÓN RECIBIDA EN /api/timeline/topic/create")
+    print("=" * 80)
+    
+    try:
+        data = request.json
+        print(f"📝 Datos recibidos: {data}")
+        
+        # Validar datos requeridos
+        if not data.get('user_id') or not data.get('course_id') or not data.get('course_topic'):
+            return jsonify({"error": "user_id, course_id y course_topic son requeridos"}), 400
+        
+        # Convertir IDs a enteros
+        user_id = int(data['user_id'])
+        course_id = int(data['course_id'])
+        course_topic = data['course_topic']
+        
+        # Crear título automático si no se proporciona
+        title = data.get('title', f"Línea de tiempo: {course_topic}")
+        
+        print(f"✅ Creando timeline de tema - user_id: {user_id}, course_id: {course_id}, topic: {course_topic}")
+        
+        # Crear la línea de tiempo
+        new_timeline = Timeline(
+            user_id=user_id,
+            course_id=course_id,
+            project_id=None,  # No está vinculado a proyectos
+            title=title,
+            description=data.get('description', f'Línea de tiempo para estudiar: {course_topic}'),
+            timeline_type='free',  # Tipo 'free' para temas libres
+            course_topic=course_topic,
+            end_date=datetime.fromisoformat(data['end_date']) if data.get('end_date') else None
+        )
+        
+        db.session.add(new_timeline)
+        db.session.flush()
+        
+        print(f"✅ Timeline de tema creado en memoria con ID: {new_timeline.id}")
+        
+        # Generar pasos con IA o usar pasos manuales
+        if data.get('generate_with_ai') and AI_AVAILABLE:
+            try:
+                print(f"🤖 Generando timeline de tema con IA...")
+                ai_context = f"Crear una línea de tiempo de estudio para el tema: {course_topic}"
+                
+                ai_result = StudyToolsService.generate_timeline(ai_context, 'course')
+                print(f"✅ Resultado IA: {ai_result}")
+                
+                # Extraer pasos del resultado de la IA
+                generated_steps = []
+                
+                if isinstance(ai_result, dict):
+                    if 'milestones' in ai_result:
+                        print(f"📦 Procesando {len(ai_result['milestones'])} milestones")
+                        for milestone in ai_result['milestones']:
+                            generated_steps.append({
+                                'title': milestone.get('title', ''),
+                                'description': milestone.get('description', ''),
+                                'order': milestone.get('order', len(generated_steps) + 1)
+                            })
+                    elif 'steps' in ai_result:
+                        print(f"📦 Procesando {len(ai_result['steps'])} steps")
+                        generated_steps = ai_result['steps']
+                elif isinstance(ai_result, list):
+                    print(f"📦 Procesando lista de {len(ai_result)} items")
+                    generated_steps = ai_result
+                
+                print(f"✅ Pasos generados: {len(generated_steps)}")
+                
+                # Crear TimelineSteps
+                for i, step_data in enumerate(generated_steps):
+                    step = TimelineStep(
+                        timeline_id=new_timeline.id,
+                        title=step_data.get('title', f'Paso {i+1}'),
+                        description=step_data.get('description', ''),
+                        order=step_data.get('order', i + 1)
+                    )
+                    db.session.add(step)
+                    print(f"  ✓ Paso {i+1}: {step_data.get('title', '')}")
+                    
+            except Exception as e:
+                print(f"❌ Error generando con IA: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            # Usar pasos manuales
+            manual_steps = data.get('steps', [])
+            print(f"📋 Usando {len(manual_steps)} pasos manuales")
+            for i, step_data in enumerate(manual_steps):
+                if step_data.get('title'):
+                    step = TimelineStep(
+                        timeline_id=new_timeline.id,
+                        title=step_data['title'],
+                        description=step_data.get('description', ''),
+                        order=step_data.get('order', i + 1)
+                    )
+                    db.session.add(step)
+                    print(f"  ✓ Paso manual {i+1}: {step_data['title']}")
+        
+        print(f"💾 Guardando en base de datos...")
+        db.session.commit()
+        print(f"✅ Timeline de tema guardado exitosamente")
+        
+        return jsonify({
+            "message": "Línea de tiempo de tema creada exitosamente",
+            "timeline": new_timeline.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error creando línea de tiempo de tema: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+

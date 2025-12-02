@@ -34,6 +34,7 @@ const TimelineCreator = ({ userId = 1 }) => {
 
   // Form states
   const [formData, setFormData] = useState({
+    timeline_type: 'course', // 'course', 'free', 'academic', 'project'
     course_id: '',
     title: '',
     description: '',
@@ -164,6 +165,7 @@ const TimelineCreator = ({ userId = 1 }) => {
 
   const resetForm = () => {
     setFormData({
+      timeline_type: 'course',
       course_id: '',
       title: '',
       description: '',
@@ -470,24 +472,43 @@ const TimelineCreator = ({ userId = 1 }) => {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Curso */}
+              {/* Tipo de Timeline */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  📚 Curso *
+                  🎯 Tipo de Línea de Tiempo *
                 </label>
                 <select
-                  value={formData.course_id}
-                  onChange={(e) => setFormData({...formData, course_id: e.target.value})}
+                  value={formData.timeline_type}
+                  onChange={(e) => setFormData({...formData, timeline_type: e.target.value, course_id: ''})}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
-                  <option value="">-- Selecciona un curso --</option>
-                  {courses.map(course => (
-                    <option key={course.id} value={course.id}>
-                      {course.name}
-                    </option>
-                  ))}
+                  <option value="course">📚 Curso Académico</option>
+                  <option value="free">🆓 Línea de Tiempo Libre (SO, Temas Generales)</option>
+                  <option value="academic">🎓 Académico General</option>
+                  <option value="project">🚀 Proyecto</option>
                 </select>
               </div>
+
+              {/* Curso - Solo visible para tipos 'course' y 'academic' */}
+              {(formData.timeline_type === 'course' || formData.timeline_type === 'academic') && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    📚 Curso {formData.timeline_type === 'course' ? '*' : '(Opcional)'}
+                  </label>
+                  <select
+                    value={formData.course_id}
+                    onChange={(e) => setFormData({...formData, course_id: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="">-- Selecciona un curso --</option>
+                    {courses.map(course => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Título */}
               <div>
