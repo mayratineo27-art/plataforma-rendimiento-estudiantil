@@ -29,6 +29,7 @@ const TimelineCreator = ({ userId = 1 }) => {
   const [timelines, setTimelines] = useState([]);
   const [courses, setCourses] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSimpleTopicModal, setShowSimpleTopicModal] = useState(false); // 🆕 Modal para temas simples
   const [selectedTimeline, setSelectedTimeline] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -46,6 +47,13 @@ const TimelineCreator = ({ userId = 1 }) => {
   const [manualSteps, setManualSteps] = useState([
     { title: '', description: '', order: 1 }
   ]);
+
+  // 🆕 Form states para tema simple
+  const [simpleTopicForm, setSimpleTopicForm] = useState({
+    courseName: '',
+    topicName: '',
+    description: ''
+  });
 
   useEffect(() => {
     loadCourses();
@@ -129,6 +137,45 @@ const TimelineCreator = ({ userId = 1 }) => {
       alert(`❌ Error al crear la línea de tiempo: ${errorMsg}`);
     } finally {
       console.log('🏁 Finalizando - desactivando loading');
+      setLoading(false);
+    }
+  };
+
+  // 🆕 Función para crear línea de tiempo simple de tema
+  const handleCreateSimpleTopic = async () => {
+    if (!simpleTopicForm.courseName.trim() || !simpleTopicForm.topicName.trim()) {
+      alert('Por favor completa el nombre del curso y el tema');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        'http://localhost:5000/api/timeline/topic',
+        {
+          user_id: parseInt(userId),
+          course_name: simpleTopicForm.courseName,
+          topic_name: simpleTopicForm.topicName,
+          description: simpleTopicForm.description || null
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      alert(`✅ Línea de tiempo de tema creada: ${simpleTopicForm.topicName}`);
+      setShowSimpleTopicModal(false);
+      setSimpleTopicForm({ courseName: '', topicName: '', description: '' });
+      loadTimelines();
+    } catch (error) {
+      console.error('Error creando línea de tiempo de tema:', error);
+      alert(`Error: ${error.response?.data?.error || error.message}`);
+    } finally {
       setLoading(false);
     }
   };
@@ -229,15 +276,24 @@ const TimelineCreator = ({ userId = 1 }) => {
                 <p className="text-gray-600 mt-1">Crea, organiza y sigue tus planes de estudio 🎯</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all"
-            >
-              <Plus size={20} />
-              <span className="font-semibold">
-                {motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)]}
-              </span>
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSimpleTopicModal(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-5 py-3 rounded-xl hover:shadow-lg transition-all"
+              >
+                <Target size={20} />
+                <span className="font-semibold">Tema Simple</span>
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all"
+              >
+                <Plus size={20} />
+                <span className="font-semibold">
+                  {motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)]}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -655,6 +711,112 @@ const TimelineCreator = ({ userId = 1 }) => {
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg font-semibold disabled:opacity-50"
                 >
                   {loading ? 'Creando...' : '✨ Crear Línea de Tiempo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🆕 Modal para Crear Línea de Tiempo Simple de Tema */}
+      {showSimpleTopicModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Target size={28} />
+                  <div>
+                    <h2 className="text-2xl font-bold">Crear Línea de Tiempo de Tema</h2>
+                    <p className="text-green-100 text-sm mt-1">Organiza cualquier tema de estudio sin necesidad de proyecto</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSimpleTopicModal(false);
+                    setSimpleTopicForm({ courseName: '', topicName: '', description: '' });
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-lg transition"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Nombre del Curso */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  📚 Nombre del Curso *
+                </label>
+                <input
+                  type="text"
+                  value={simpleTopicForm.courseName}
+                  onChange={(e) => setSimpleTopicForm({ ...simpleTopicForm, courseName: e.target.value })}
+                  placeholder="Ej: Matemáticas, Historia, Programación..."
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition"
+                />
+              </div>
+
+              {/* Nombre del Tema */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  🎯 Tema del Curso *
+                </label>
+                <input
+                  type="text"
+                  value={simpleTopicForm.topicName}
+                  onChange={(e) => setSimpleTopicForm({ ...simpleTopicForm, topicName: e.target.value })}
+                  placeholder="Ej: Álgebra Lineal, Segunda Guerra Mundial, Estructuras de Datos..."
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition"
+                />
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  📝 Descripción (Opcional)
+                </label>
+                <textarea
+                  value={simpleTopicForm.description}
+                  onChange={(e) => setSimpleTopicForm({ ...simpleTopicForm, description: e.target.value })}
+                  placeholder="Describe los objetivos o contenidos del tema..."
+                  rows="4"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition resize-none"
+                />
+              </div>
+
+              {/* Información adicional */}
+              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                  <Sparkles size={18} />
+                  ¿Qué es una Línea de Tiempo Simple?
+                </h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>✅ Perfecta para organizar temas específicos de cualquier curso</li>
+                  <li>✅ No requiere proyecto ni configuración avanzada</li>
+                  <li>✅ Ideal para seguimiento de estudio por materias</li>
+                  <li>✅ Agrupa todos tus temas en un solo lugar</li>
+                </ul>
+              </div>
+
+              {/* Botones de Acción */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowSimpleTopicModal(false);
+                    setSimpleTopicForm({ courseName: '', topicName: '', description: '' });
+                  }}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCreateSimpleTopic}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:shadow-lg font-semibold disabled:opacity-50"
+                >
+                  {loading ? 'Creando...' : '🎯 Crear Línea de Tiempo'}
                 </button>
               </div>
             </div>

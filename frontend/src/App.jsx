@@ -10,9 +10,7 @@ import Dashboard from './pages/Dashboard';
 import SesionTiempoReal from './pages/SesionTiempoReal';
 import PerfilEstudiante from './pages/PerfilEstudiante';
 import Reportes from './pages/Reportes';
-import AcademicDashboard from './pages/AcademicDashboard'; // 👈 Tu nuevo módulo
-import FreeTimeline from './components/FreeTimeline'; // 👈 Líneas de tiempo libres
-import TopicTimelines from './components/TopicTimelines'; // 👈 Líneas de tiempo por tema de curso
+import AcademicDashboard from './pages/AcademicDashboard';
 
 function App() {
   return (
@@ -27,14 +25,7 @@ function App() {
         <Route path="/" element={<ProtectedLayout />}>
           <Route index element={<Dashboard />} />
           
-          {/* 🆕 AQUÍ ESTÁ EL CAMBIO: Módulo 1 - Asistente Académico */}
           <Route path="analisis" element={<AcademicDashboard />} />
-          
-          {/* 🆕 Líneas de Tiempo Libres (SO, tecnologías, etc.) */}
-          <Route path="timelines-libre" element={<FreeTimeline />} />
-          
-          {/* 🆕 Líneas de Tiempo por Tema de Curso */}
-          <Route path="timelines-temas" element={<TopicTimelines />} />
           
           <Route path="sesion" element={<SesionTiempoReal />} />
           <Route path="perfil" element={<PerfilEstudiante />} />
@@ -73,9 +64,7 @@ const ProtectedLayout = () => {
 
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <NavLink to="/">⚛️ Nodo Operacional</NavLink>
-                <NavLink to="/analisis">📄 Nodo Digital</NavLink> {/* Ahora lleva a AcademicDashboard */}
-                <NavLink to="/timelines-libre">🆓 Timelines Libres</NavLink> {/* Líneas de tiempo para SO, tecnologías */}
-                <NavLink to="/timelines-temas">📚 Temas de Cursos</NavLink> {/* Líneas de tiempo por tema */}
+                <NavLink to="/analisis">📄 Nodo Digital</NavLink>
                 <NavLink to="/sesion">🎥 Stream Multimedia</NavLink>
                 <NavLink to="/perfil">👤 Avatar Personal</NavLink>
                 <NavLink to="/reportes">📊 Análisis Inteligente</NavLink>

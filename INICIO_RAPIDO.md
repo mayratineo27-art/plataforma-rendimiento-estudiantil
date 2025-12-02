@@ -1,22 +1,36 @@
 # 🚀 Inicio Rápido - Nuevas Funcionalidades
 
-## ⚡ 3 Pasos para Empezar
+## ⚡ Pasos para Empezar
 
-### 1️⃣ Aplicar Migración de Base de Datos (5 minutos)
+### 1️⃣ Aplicar Migraciones de Base de Datos (5 minutos)
 
 ```bash
 # Abrir MySQL
 mysql -u root -p
 
-# Ejecutar migración
+# Ejecutar migración principal
 source database/migrations/mejoras_gestion_2025_11_23.sql
 
 # Verificar
 USE plataforma_estudiantil;
 SHOW TABLES;
+
+# Ejecutar migración de líneas de tiempo de temas
+cd backend
+python add_course_topic_to_timeline.py
+# O en Windows: py add_course_topic_to_timeline.py
 ```
 
-### 2️⃣ Reiniciar Backend (30 segundos)
+### 2️⃣ Instalar Dependencias Frontend (2 minutos)
+
+```bash
+cd frontend
+npm install
+```
+
+**Nota:** Esto instalará `jwt-decode` y otras dependencias nuevas necesarias para las líneas de tiempo de temas.
+
+### 3️⃣ Reiniciar Backend (30 segundos)
 
 ```bash
 cd backend
@@ -29,7 +43,7 @@ source venv/bin/activate
 python run.py
 ```
 
-### 3️⃣ Reiniciar Frontend (30 segundos)
+### 4️⃣ Reiniciar Frontend (30 segundos)
 
 ```bash
 cd frontend
@@ -41,6 +55,19 @@ npm start
 ---
 
 ## 🎯 Prueba las Nuevas Funcionalidades
+
+### 📚 Líneas de Tiempo por Temas de Cursos
+
+```
+1. Navega a "📄 Nodo Digital" en el menú principal
+2. Haz clic en la pestaña "Temas"
+3. Click en "+ Nueva Línea de Tiempo"
+4. Llenar formulario:
+   - Curso: "Matemáticas"
+   - Tema: "Álgebra Lineal"
+   - Descripción: "Vectores, matrices y sistemas lineales"
+5. Click en "Crear Línea de Tiempo"
+```
 
 ### 📚 Gestión de Cursos (Tab "Gestión")
 

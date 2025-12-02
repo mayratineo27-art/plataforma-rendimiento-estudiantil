@@ -19,6 +19,8 @@ Una plataforma innovadora que utiliza Inteligencia Artificial para analizar el r
 - 📊 Medición cuantitativa de evolución en redacción y vocabulario
 - 🎯 Predicción de preparación para la tesis
 - 📈 Dashboard visual de progreso
+- 📚 **Gestión de Cursos y Tareas** (Nuevo)
+- ✍️ **Evaluación de Escritura con IA** (Nuevo)
 
 ### Módulo 2: Análisis de Interacción en Tiempo Real
 - 🎥 Análisis de video mediante cámara web (detección facial multirostro)
@@ -38,6 +40,12 @@ Una plataforma innovadora que utiliza Inteligencia Artificial para analizar el r
 - 📊 Visualización de datos con gráficos interactivos
 - 🎨 Generación automática de plantillas (PPT, DOCX)
 - 🎯 Contenido 100% personalizado según el perfil del estudiante
+
+### Módulo 5: Líneas de Tiempo (Nuevo ✨)
+- 🗓️ **Líneas de Tiempo Libres**: Organización de proyectos generales
+- 📚 **Líneas de Tiempo por Temas**: Planificación específica por curso y tema
+- ⏱️ **Gestión de Tiempo**: Timer y cronómetro integrados
+- 📈 **Seguimiento de Progreso**: Visualización del avance en cada tema
 
 ## 🏗️ Arquitectura
 
@@ -95,19 +103,23 @@ Una plataforma innovadora que utiliza Inteligencia Artificial para analizar el r
 
 ## 📦 Instalación
 
+### Instalación Rápida
+
+Para instrucciones detalladas paso a paso, consulta **[INSTALACION_COMPLETA.md](INSTALACION_COMPLETA.md)**
+
 ### Prerequisitos
 
 Asegúrate de tener instalado:
-- Python 3.13.8
-- Node.js 22.20.0
-- npm 10.9.3
+- Python 3.10+ (recomendado 3.13.8)
+- Node.js 16+ (recomendado 22.20.0)
+- npm 8+ (recomendado 10.9.3)
 - MySQL 8.0+
 - Git 2.51.0+
 
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/plataforma-rendimiento-estudiantil.git
+git clone https://github.com/mayratineo27-art/plataforma-rendimiento-estudiantil.git
 cd plataforma-rendimiento-estudiantil
 ```
 
@@ -120,7 +132,9 @@ cd backend
 python -m venv venv
 
 # Activar entorno virtual
-# Windows:
+# Windows PowerShell:
+.\venv\Scripts\Activate.ps1
+# Windows CMD:
 venv\Scripts\activate
 # Linux/Mac:
 source venv/bin/activate
@@ -140,11 +154,15 @@ nano .env
 ```bash
 # Crear la base de datos MySQL
 mysql -u root -p
-CREATE DATABASE rendimiento_estudiantil;
+CREATE DATABASE plataforma_estudiantil CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 exit;
 
-# Ejecutar migraciones
-flask db upgrade
+# Aplicar migraciones
+mysql -u root -p plataforma_estudiantil < database/migrations/mejoras_gestion_2025_11_23.sql
+
+# Ejecutar migración adicional para líneas de tiempo de temas
+cd backend
+python add_course_topic_to_timeline.py
 ```
 
 ### 4. Configurar el Frontend
@@ -205,13 +223,26 @@ npm run test:coverage
 
 ## 📚 Documentación
 
+### Guías de Instalación
+- **[Instalación Completa](INSTALACION_COMPLETA.md)** - Guía detallada paso a paso
+- **[Inicio Rápido](INICIO_RAPIDO.md)** - Configuración rápida para desarrollo
+
+### Nuevas Funcionalidades
+- **[Líneas de Tiempo por Temas](LINEAS_TIEMPO_TEMAS_CURSOS.md)** - Gestión de temas de cursos
+- **[Módulo de Evaluación de Escritura](MODULO_EVALUACION_ESCRITURA.md)** - Análisis con IA
+- **[Guía del Nodo Digital](GUIA_NODO_DIGITAL.md)** - Módulo académico completo
+- **[Sistema de Timelines Libres](SISTEMA_TIMELINES_LIBRES.md)** - Organización flexible
+
+### Documentación Técnica
 - [Arquitectura General](docs/arquitectura/arquitectura_general.md)
 - [Módulo 1: Análisis de Progreso](docs/modulos/modulo1_analisis_progreso.md)
 - [Módulo 2: Interacción Tiempo Real](docs/modulos/modulo2_interaccion_tiempo_real.md)
 - [Módulo 3: Perfil Integral](docs/modulos/modulo3_perfil_integral.md)
 - [Módulo 4: Reportes Personalizados](docs/modulos/modulo4_reportes_personalizados.md)
 - [API Endpoints](docs/api/endpoints.md)
-- [Guía de Instalación Completa](docs/guias/instalacion.md)
+
+### Solución de Problemas
+- **[Solución de Errores](SOLUCION_ERRORES.md)** - Troubleshooting común
 
 ## 🔑 Variables de Entorno
 
@@ -220,16 +251,30 @@ npm run test:coverage
 FLASK_APP=run.py
 FLASK_ENV=development
 SECRET_KEY=tu-clave-secreta-aqui
+JWT_SECRET_KEY=otra-clave-secreta-para-jwt
 
 # Base de Datos
 DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=rendimiento_estudiantil
+DB_NAME=plataforma_estudiantil
 DB_USER=root
 DB_PASSWORD=tu-password
 
 # Google Gemini API
 GEMINI_API_KEY=tu-api-key-de-gemini
+
+# Archivos
+UPLOAD_FOLDER=uploads
+MAX_CONTENT_LENGTH=16777216
+
+# Logging
+LOG_LEVEL=INFO
+```
+
+### Frontend (.env - Opcional)
+```env
+REACT_APP_API_URL=http://localhost:5000
+REACT_APP_ENV=development
 
 # Configuración de archivos
 UPLOAD_FOLDER=uploads

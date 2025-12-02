@@ -82,13 +82,14 @@ class Timeline(db.Model):
 - Interfaz con TailwindCSS
 
 #### Rutas Frontend
-- **Ruta**: `/timelines-temas`
-- **Navegación**: "📚 Temas de Cursos" en el menú principal
+- **Ubicación**: Dentro del Nodo Digital (AcademicDashboard)
+- **Pestaña**: "Línea Tiempo" en la navegación de pestañas
+- **Botón**: "Tema Simple" (verde) en el header de Línea Tiempo
+- **Acceso**: http://localhost:3000/analisis → Pestaña "Línea Tiempo" → Botón "Tema Simple"
 
-#### Archivos Frontend Creados
-- `frontend/src/components/TopicTimelines.jsx`
-- `frontend/src/components/CreateTopicTimeline.jsx`
-- `frontend/src/App.jsx` - Actualizado con nueva ruta
+#### Archivos Frontend Modificados
+- `frontend/src/components/Timeline/TimelineCreator.jsx` - Integrado funcionalidad de temas simples
+- `frontend/src/pages/AcademicDashboard.jsx` - Actualizado con nueva estructura
 
 #### Dependencias Añadidas
 - `jwt-decode`: ^4.0.0 - Para decodificar tokens JWT en el frontend
@@ -129,19 +130,25 @@ npm start
 
 ## 📖 Uso
 
+### Acceder al Módulo
+
+1. Inicia sesión en la aplicación
+2. Navega a **"📄 Nodo Digital"** en el menú principal
+3. Haz clic en la pestaña **"Línea Tiempo"**
+4. Haz clic en el botón **"Tema Simple"** (verde) en la parte superior
+
 ### Crear una Línea de Tiempo de Tema
 
-1. Navega a "📚 Temas de Cursos" en el menú principal
-2. Haz clic en "+ Nueva Línea de Tiempo"
-3. Completa el formulario:
+1. En la pestaña "Línea Tiempo", haz clic en el botón "Tema Simple"
+2. Completa el formulario:
    - **Nombre del Curso**: El curso al que pertenece el tema
    - **Tema**: El tema específico a estudiar
    - **Descripción** (opcional): Detalles adicionales
-4. Haz clic en "Crear Línea de Tiempo"
+3. Haz clic en "🎯 Crear Línea de Tiempo"
 
 ### Visualizar Líneas de Tiempo
 
-La página principal muestra todas tus líneas de tiempo de temas en tarjetas con:
+Las líneas de tiempo de temas aparecen junto con las otras líneas de tiempo en la lista del panel izquierdo. Se identifican por su tipo `'free'` y el campo `course_topic`.
 - Nombre del tema
 - Curso asociado
 - Descripción
