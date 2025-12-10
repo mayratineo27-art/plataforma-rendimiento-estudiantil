@@ -158,17 +158,26 @@ def create_summary():
 
 @academic_bp.route('/tools/timeline', methods=['POST'])
 def create_timeline():
-    """Genera una línea de tiempo para un proyecto/curso y opcionalmente la guarda"""
+    """Genera una línea de tiempo para un proyecto/curso y opcionalmente la guarda
+    
+    Parámetros:
+    - topic: Tema de la línea de tiempo (requerido)
+    - type: Tipo de timeline (academic, course, project, free) - default: 'free'
+    - user_id: ID del usuario (requerido si save=True)
+    - project_id: ID del proyecto (opcional)
+    - course_id: ID del curso (opcional - permite crear sin curso)
+    - save: Si debe guardarse en BD (default: False)
+    """
     if not STUDY_TOOLS_AVAILABLE:
         return jsonify({"error": "Servicio de herramientas de estudio no disponible"}), 503
     
     data = request.json
     topic = data.get('topic')
-    timeline_type = data.get('type', 'academic')  # academic o course
+    timeline_type = data.get('type', 'free')  # Por defecto 'free' para timelines sin curso
     user_id = data.get('user_id')
     project_id = data.get('project_id')
-    course_id = data.get('course_id')
-    save_timeline = data.get('save', False)  # Si debe guardarse en BD
+    course_id = data.get('course_id')  # Ahora es completamente opcional
+    save_timeline = data.get('save', False)
     
     if not topic:
         return jsonify({"error": "El tema es obligatorio"}), 400
@@ -198,14 +207,23 @@ def create_timeline():
                 if 'completed' not in step:
                     step['completed'] = False
             
-            # Crear el registro en la BD
+            # Determinar descripción según el contexto
+            if course_id:
+                description = f"Línea de tiempo generada para el curso"
+            elif project_id:
+                description = f"Línea de tiempo generada para el proyecto"
+            else:
+                description = f"Línea de tiempo libre sobre {topic}"
+            
+            # Crear el registro en la BD (course_id ahora puede ser None)
             new_timeline = Timeline(
                 user_id=user_id,
                 project_id=project_id,
-                course_id=course_id,
+                course_id=course_id,  # Puede ser None - sin curso asociado
                 title=topic,
-                description=f"Línea de tiempo generada para {timeline_type}",
+                description=description,
                 timeline_type=timeline_type,
+                course_topic=topic if not course_id else None,  # Guardar tema si no hay curso
                 steps_json=json.dumps(steps)
             )
             
@@ -224,7 +242,182 @@ def create_timeline():
     except Exception as e:
         db.session.rollback()
         print(f"Error generando línea de tiempo: {e}")
-        return jsonify({"error": "Error interno en la IA"}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Error interno: {str(e)}"}), 500
+
+@academic_bp.route('/timelines/history', methods=['GET'])
+def get_timeline_history():
+    """Obtiene el historial de líneas de tiempo del usuario
+    
+    Query params:
+    - user_id: ID del usuario (requerido)
+    - course_id: Filtrar por curso (opcional)
+    - timeline_type: Filtrar por tipo (optional)
+    - is_completed: Filtrar por completadas (true/false, opcional)
+    - limit: Cantidad máxima de resultados (default: 50)
+    """
+    user_id = request.args.get('user_id', type=int)
+    course_id = request.args.get('course_id', type=int)
+    timeline_type = request.args.get('timeline_type')
+    is_completed = request.args.get('is_completed')
+    limit = request.args.get('limit', 50, type=int)
+    
+    if not user_id:
+        return jsonify({"error": "user_id es requerido"}), 400
+    
+    try:
+        # Construcción de query con filtros
+        query = Timeline.query.filter_by(user_id=user_id, is_visible=True)
+        
+        # Filtrar por curso si se proporciona
+        if course_id is not None:
+            query = query.filter_by(course_id=course_id)
+        
+        # Filtrar por tipo si se proporciona
+        if timeline_type:
+            query = query.filter_by(timeline_type=timeline_type)
+        
+        # Filtrar por estado completado
+        if is_completed is not None:
+            is_completed_bool = is_completed.lower() == 'true'
+            query = query.filter_by(is_completed=is_completed_bool)
+        
+        # Ordenar por fecha de creación (más recientes primero)
+        timelines = query.order_by(Timeline.created_at.desc()).limit(limit).all()
+        
+        return jsonify({
+            "timelines": [t.to_dict() for t in timelines],
+            "total": len(timelines)
+        })
+    
+    except Exception as e:
+        print(f"Error obteniendo historial de timelines: {e}")
+        return jsonify({"error": "Error al obtener historial"}), 500
+
+
+@academic_bp.route('/timelines/<int:timeline_id>', methods=['GET'])
+def get_timeline_detail(timeline_id):
+    """Obtiene los detalles de una línea de tiempo específica"""
+    try:
+        timeline = Timeline.query.get(timeline_id)
+        
+        if not timeline:
+            return jsonify({"error": "Línea de tiempo no encontrada"}), 404
+        
+        return jsonify(timeline.to_dict())
+    
+    except Exception as e:
+        print(f"Error obteniendo timeline: {e}")
+        return jsonify({"error": "Error al obtener timeline"}), 500
+
+
+@academic_bp.route('/timelines/<int:timeline_id>', methods=['DELETE'])
+def delete_timeline(timeline_id):
+    """Elimina una línea de tiempo del historial (soft delete - marca como no visible)"""
+    try:
+        timeline = Timeline.query.get(timeline_id)
+        
+        if not timeline:
+            return jsonify({"error": "Línea de tiempo no encontrada"}), 404
+        
+        # Soft delete - solo marca como no visible
+        timeline.is_visible = False
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Línea de tiempo eliminada exitosamente",
+            "timeline_id": timeline_id
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error eliminando timeline: {e}")
+        return jsonify({"error": "Error al eliminar timeline"}), 500
+
+
+@academic_bp.route('/timelines/<int:timeline_id>/permanent', methods=['DELETE'])
+def delete_timeline_permanent(timeline_id):
+    """Elimina permanentemente una línea de tiempo del historial"""
+    try:
+        timeline = Timeline.query.get(timeline_id)
+        
+        if not timeline:
+            return jsonify({"error": "Línea de tiempo no encontrada"}), 404
+        
+        # Eliminación permanente
+        db.session.delete(timeline)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Línea de tiempo eliminada permanentemente",
+            "timeline_id": timeline_id
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error eliminando timeline permanentemente: {e}")
+        return jsonify({"error": "Error al eliminar timeline"}), 500
+
+
+@academic_bp.route('/timelines/cleanup', methods=['POST'])
+def cleanup_old_timelines():
+    """Limpia timelines antiguas o no visibles del historial
+    
+    Body params:
+    - user_id: ID del usuario (requerido)
+    - days_old: Eliminar timelines con más de X días (default: 90)
+    - delete_completed: Eliminar completadas (default: false)
+    - permanent: Eliminación permanente vs soft delete (default: false)
+    """
+    data = request.json
+    user_id = data.get('user_id')
+    days_old = data.get('days_old', 90)
+    delete_completed = data.get('delete_completed', False)
+    permanent = data.get('permanent', False)
+    
+    if not user_id:
+        return jsonify({"error": "user_id es requerido"}), 400
+    
+    try:
+        # Calcular fecha límite
+        from datetime import timedelta
+        date_limit = datetime.utcnow() - timedelta(days=days_old)
+        
+        # Query base
+        query = Timeline.query.filter(
+            Timeline.user_id == user_id,
+            Timeline.created_at < date_limit
+        )
+        
+        # Filtrar por completadas si se solicita
+        if delete_completed:
+            query = query.filter_by(is_completed=True)
+        
+        timelines = query.all()
+        count = len(timelines)
+        
+        if permanent:
+            # Eliminación permanente
+            for timeline in timelines:
+                db.session.delete(timeline)
+        else:
+            # Soft delete
+            for timeline in timelines:
+                timeline.is_visible = False
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": f"{count} líneas de tiempo {'eliminadas permanentemente' if permanent else 'ocultadas'}",
+            "count": count
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error limpiando timelines: {e}")
+        return jsonify({"error": "Error al limpiar historial"}), 500
+
 
 @academic_bp.route('/tools/analyze-syllabus', methods=['POST'])
 def analyze_syllabus():
@@ -570,9 +763,11 @@ def evaluate_writing():
     - previous_document: Archivo anterior para comparar (opcional)
     - user_id: ID del usuario
     - course_id: ID del curso (opcional)
+    - save_to_history: Si guardar en historial (default: true)
     
     Retorna:
     - Reporte con métricas, scores y recomendaciones
+    - ID de evaluación guardada
     """
     try:
         print("=" * 80)
@@ -608,8 +803,9 @@ def evaluate_writing():
         # Obtener metadatos
         user_id = request.form.get('user_id', type=int)
         course_id = request.form.get('course_id', type=int)
+        save_to_history = request.form.get('save_to_history', 'true').lower() == 'true'
         
-        print(f"👤 Usuario: {user_id}, 📚 Curso: {course_id}")
+        print(f"👤 Usuario: {user_id}, 📚 Curso: {course_id}, 💾 Guardar: {save_to_history}")
         
         # Crear carpeta para guardar archivos
         upload_dir = os.path.join('uploads', 'writing')
@@ -650,16 +846,71 @@ def evaluate_writing():
             metadata=metadata
         )
         
-        # Limpiar archivos temporales (opcional - comentado para debug)
-        # os.remove(current_path)
-        # if previous_path and os.path.exists(previous_path):
-        #     os.remove(previous_path)
+        # Guardar en base de datos si se solicita
+        evaluation_id = None
+        if save_to_history and user_id:
+            try:
+                from app.models.writing_evaluation import WritingEvaluation
+                
+                evaluation = WritingEvaluation(
+                    user_id=user_id,
+                    course_id=course_id,
+                    file_name=current_file.filename,
+                    file_path=current_path,
+                    previous_file_path=previous_path,
+                    
+                    # Métricas del documento
+                    word_count=report['metrics']['current']['word_count'],
+                    sentence_count=report['metrics']['current']['sentence_count'],
+                    paragraph_count=report['metrics']['current']['paragraph_count'],
+                    vocabulary_size=report['metrics']['current']['vocabulary_size'],
+                    readability_score=report['metrics']['current']['readability_score'],
+                    
+                    # Scores de evaluación
+                    overall_score=report['evaluation']['overall_score'],
+                    grammar_score=report['evaluation']['grammar_score'],
+                    coherence_score=report['evaluation']['coherence_score'],
+                    vocabulary_score=report['evaluation']['vocabulary_score'],
+                    structure_score=report['evaluation']['structure_score'],
+                    
+                    # Análisis adicional
+                    tone_analysis=report['evaluation'].get('tone_analysis'),
+                    formality_score=report['evaluation'].get('formality_score'),
+                    complexity_level=report['evaluation'].get('complexity_level'),
+                    
+                    # Comparación
+                    improvement_percentage=report['evaluation'].get('improvement_percentage'),
+                    improvements_made=report['evaluation'].get('improvements_made'),
+                    
+                    # Feedback
+                    strengths=report['evaluation']['strengths'],
+                    weaknesses=report['evaluation']['weaknesses'],
+                    recommendations=report['evaluation']['recommendations'],
+                    specific_errors=report['evaluation'].get('specific_errors'),
+                    suggestions=report['evaluation'].get('suggestions'),
+                    summary=report['evaluation']['summary'],
+                    
+                    # Métricas adicionales
+                    additional_metrics=report['metrics']
+                )
+                
+                db.session.add(evaluation)
+                db.session.commit()
+                evaluation_id = evaluation.id
+                
+                print(f"✅ Evaluación guardada en BD con ID: {evaluation_id}")
+                
+            except Exception as e:
+                print(f"⚠️  Error guardando en BD: {e}")
+                db.session.rollback()
         
         print(f"✅ Reporte generado exitosamente")
         
         return jsonify({
             "message": "Evaluación completada",
-            "report": report
+            "report": report,
+            "evaluation_id": evaluation_id,
+            "saved_to_history": save_to_history and evaluation_id is not None
         }), 200
         
     except Exception as e:
@@ -667,3 +918,317 @@ def evaluate_writing():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@academic_bp.route('/tools/writing-history/<int:user_id>', methods=['GET'])
+def get_writing_history(user_id):
+    """
+    Obtiene el historial de evaluaciones de escritura de un usuario
+    
+    Query params:
+    - course_id: Filtrar por curso (opcional)
+    - limit: Número máximo de resultados (default: 50)
+    - offset: Para paginación (default: 0)
+    
+    Retorna:
+    - Lista de evaluaciones con resumen
+    """
+    try:
+        from app.models.writing_evaluation import WritingEvaluation
+        
+        # Parámetros de consulta
+        course_id = request.args.get('course_id', type=int)
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        # Construir query
+        query = WritingEvaluation.query.filter_by(user_id=user_id)
+        
+        if course_id:
+            query = query.filter_by(course_id=course_id)
+        
+        # Ordenar por fecha descendente
+        query = query.order_by(WritingEvaluation.evaluated_at.desc())
+        
+        # Paginación
+        total = query.count()
+        evaluations = query.limit(limit).offset(offset).all()
+        
+        return jsonify({
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "evaluations": [eval.to_summary_dict() for eval in evaluations]
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error obteniendo historial: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@academic_bp.route('/tools/writing-evaluation/<int:evaluation_id>', methods=['GET'])
+def get_writing_evaluation(evaluation_id):
+    """
+    Obtiene el detalle completo de una evaluación
+    
+    Retorna:
+    - Evaluación completa con todos los detalles
+    """
+    try:
+        from app.models.writing_evaluation import WritingEvaluation
+        
+        evaluation = WritingEvaluation.query.get(evaluation_id)
+        
+        if not evaluation:
+            return jsonify({"error": "Evaluación no encontrada"}), 404
+        
+        return jsonify({
+            "evaluation": evaluation.to_dict()
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error obteniendo evaluación: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@academic_bp.route('/tools/writing-evaluation/<int:evaluation_id>/pdf', methods=['GET'])
+def download_writing_evaluation_pdf(evaluation_id):
+    """
+    Descarga la evaluación como PDF
+    
+    Genera un PDF formateado con:
+    - Información general
+    - Scores visuales
+    - Métricas del documento
+    - Errores específicos
+    - Sugerencias de mejora
+    - Recomendaciones
+    
+    Retorna:
+    - PDF descargable
+    """
+    try:
+        from app.models.writing_evaluation import WritingEvaluation
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+        from reportlab.lib.units import inch
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        from io import BytesIO
+        
+        evaluation = WritingEvaluation.query.get(evaluation_id)
+        
+        if not evaluation:
+            return jsonify({"error": "Evaluación no encontrada"}), 404
+        
+        # Crear PDF en memoria
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter, 
+                              rightMargin=72, leftMargin=72,
+                              topMargin=72, bottomMargin=18)
+        
+        # Contenedor para elementos
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Estilos personalizados
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#4F46E5'),
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            textColor=colors.HexColor('#7C3AED'),
+            spaceAfter=12,
+            spaceBefore=20
+        )
+        
+        # Título
+        elements.append(Paragraph("Reporte de Evaluación de Escritura", title_style))
+        elements.append(Spacer(1, 12))
+        
+        # Información general
+        info_data = [
+            ['Documento:', evaluation.file_name],
+            ['Fecha:', evaluation.evaluated_at.strftime('%d/%m/%Y %H:%M')],
+            ['Palabras:', str(evaluation.word_count)],
+            ['Score General:', f"{evaluation.overall_score}/100"]
+        ]
+        
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#EEF2FF')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(info_table)
+        elements.append(Spacer(1, 20))
+        
+        # Scores
+        elements.append(Paragraph("Puntuaciones Detalladas", heading_style))
+        
+        scores_data = [
+            ['Aspecto', 'Puntuación'],
+            ['Gramática', f"{evaluation.grammar_score}/100"],
+            ['Coherencia', f"{evaluation.coherence_score}/100"],
+            ['Vocabulario', f"{evaluation.vocabulary_score}/100"],
+            ['Estructura', f"{evaluation.structure_score}/100"]
+        ]
+        
+        scores_table = Table(scores_data, colWidths=[3*inch, 2*inch])
+        scores_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4F46E5')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        elements.append(scores_table)
+        elements.append(Spacer(1, 20))
+        
+        # Análisis adicional
+        if evaluation.tone_analysis:
+            elements.append(Paragraph("Análisis de Estilo", heading_style))
+            style_data = [
+                ['Tono:', evaluation.tone_analysis],
+                ['Formalidad:', f"{evaluation.formality_score}/100" if evaluation.formality_score else 'N/A'],
+                ['Complejidad:', evaluation.complexity_level or 'N/A']
+            ]
+            style_table = Table(style_data, colWidths=[2*inch, 4*inch])
+            style_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#FEF3C7')),
+                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ]))
+            elements.append(style_table)
+            elements.append(Spacer(1, 20))
+        
+        # Fortalezas
+        elements.append(Paragraph("✓ Fortalezas", heading_style))
+        for strength in evaluation.strengths:
+            elements.append(Paragraph(f"• {strength}", styles['Normal']))
+        elements.append(Spacer(1, 15))
+        
+        # Áreas de mejora
+        elements.append(Paragraph("⚠ Áreas de Mejora", heading_style))
+        for weakness in evaluation.weaknesses:
+            elements.append(Paragraph(f"• {weakness}", styles['Normal']))
+        elements.append(Spacer(1, 15))
+        
+        # Errores específicos (nueva página si es necesario)
+        if evaluation.specific_errors:
+            elements.append(PageBreak())
+            elements.append(Paragraph("Errores Específicos Detectados", heading_style))
+            
+            for error in evaluation.specific_errors[:10]:  # Máximo 10 errores
+                error_text = f"<b>{error.get('type', 'Error').upper()}:</b> {error.get('error', '')} → {error.get('correction', '')}"
+                elements.append(Paragraph(error_text, styles['Normal']))
+                
+                if error.get('explanation'):
+                    elements.append(Paragraph(f"<i>{error['explanation']}</i>", styles['Italic']))
+                elements.append(Spacer(1, 10))
+        
+        # Sugerencias
+        if evaluation.suggestions:
+            elements.append(Spacer(1, 15))
+            elements.append(Paragraph("💡 Sugerencias de Mejora", heading_style))
+            
+            for suggestion in evaluation.suggestions[:8]:  # Máximo 8 sugerencias
+                sugg_text = f"<b>[{suggestion.get('category', 'General').upper()}]</b> {suggestion.get('suggestion', '')}"
+                elements.append(Paragraph(sugg_text, styles['Normal']))
+                
+                if suggestion.get('example'):
+                    elements.append(Paragraph(f"Ejemplo: <i>{suggestion['example']}</i>", styles['Italic']))
+                elements.append(Spacer(1, 10))
+        
+        # Recomendaciones
+        elements.append(PageBreak())
+        elements.append(Paragraph("Recomendaciones para Mejorar", heading_style))
+        for i, rec in enumerate(evaluation.recommendations, 1):
+            elements.append(Paragraph(f"{i}. {rec}", styles['Normal']))
+            elements.append(Spacer(1, 8))
+        
+        # Resumen final
+        elements.append(Spacer(1, 20))
+        elements.append(Paragraph("Resumen General", heading_style))
+        elements.append(Paragraph(evaluation.summary, styles['Normal']))
+        
+        # Generar PDF
+        doc.build(elements)
+        
+        # Preparar para descarga
+        buffer.seek(0)
+        
+        filename = f"evaluacion_{evaluation.id}_{evaluation.file_name.rsplit('.', 1)[0]}.pdf"
+        
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+        
+    except ImportError as e:
+        print(f"❌ Error: ReportLab no instalado: {e}")
+        return jsonify({
+            "error": "ReportLab no está instalado. Instala con: pip install reportlab"
+        }), 503
+        
+    except Exception as e:
+        print(f"❌ Error generando PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@academic_bp.route('/tools/writing-evaluation/<int:evaluation_id>', methods=['DELETE'])
+def delete_writing_evaluation(evaluation_id):
+    """
+    Elimina una evaluación del historial
+    
+    Retorna:
+    - Confirmación de eliminación
+    """
+    try:
+        from app.models.writing_evaluation import WritingEvaluation
+        
+        evaluation = WritingEvaluation.query.get(evaluation_id)
+        
+        if not evaluation:
+            return jsonify({"error": "Evaluación no encontrada"}), 404
+        
+        # Eliminar archivos asociados si existen
+        try:
+            if evaluation.file_path and os.path.exists(evaluation.file_path):
+                os.remove(evaluation.file_path)
+            if evaluation.previous_file_path and os.path.exists(evaluation.previous_file_path):
+                os.remove(evaluation.previous_file_path)
+        except Exception as e:
+            print(f"⚠️  Error eliminando archivos: {e}")
+        
+        # Eliminar registro de BD
+        db.session.delete(evaluation)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Evaluación eliminada exitosamente"
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error eliminando evaluación: {e}")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+

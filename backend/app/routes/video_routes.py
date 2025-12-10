@@ -18,12 +18,20 @@ from app.models.emotion_data import EmotionData
 from app.models.audio_transcription import AudioTranscription
 from app.models.attention_metrics import AttentionMetrics
 
-# Importar controladores - TODOS ACTIVOS
-from app.controllers.video_controller import VideoController
-from app.controllers.audio_controller import AudioController
-video_controller = VideoController()
-audio_controller = AudioController()
-CONTROLLERS_AVAILABLE = True
+# Importar controladores - TODOS ACTIVOS (con manejo de errores)
+try:
+    from app.controllers.video_controller import VideoController
+    from app.controllers.audio_controller import AudioController
+    video_controller = VideoController()
+    audio_controller = AudioController()
+    CONTROLLERS_AVAILABLE = True
+    print("   ✅ VideoController y AudioController disponibles")
+except Exception as e:
+    print(f"   ⚠️ Controllers no disponibles: {str(e)}")
+    print("   ℹ️ Usando implementación manual de endpoints")
+    video_controller = None
+    audio_controller = None
+    CONTROLLERS_AVAILABLE = False
 
 # ========================================
 # CREAR BLUEPRINTS (UNA SOLA VEZ)

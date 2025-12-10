@@ -86,9 +86,16 @@ const TimelineCreator = ({ userId = 1 }) => {
     console.log('📋 formData:', formData);
     console.log('📋 userId:', userId);
     
-    if (!formData.course_id || !formData.title) {
-      console.warn('⚠️ Validación falló - falta course_id o title');
-      alert('Por favor completa el curso y título');
+    // Validación: solo requiere curso si el tipo es 'course'
+    if (!formData.title) {
+      console.warn('⚠️ Validación falló - falta title');
+      alert('Por favor completa el título');
+      return;
+    }
+
+    if (formData.timeline_type === 'course' && !formData.course_id) {
+      console.warn('⚠️ Validación falló - timeline tipo "course" requiere course_id');
+      alert('Por favor selecciona un curso');
       return;
     }
 
@@ -98,10 +105,10 @@ const TimelineCreator = ({ userId = 1 }) => {
 
       const payload = {
         user_id: parseInt(userId),
-        course_id: parseInt(formData.course_id),
+        course_id: formData.course_id ? parseInt(formData.course_id) : null, // Puede ser null
         title: formData.title,
         description: formData.description,
-        timeline_type: 'course',
+        timeline_type: formData.timeline_type || 'free',
         end_date: formData.end_date || null,
         steps: formData.generate_with_ai 
           ? [] 
@@ -150,25 +157,53 @@ const TimelineCreator = ({ userId = 1 }) => {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       
+      // Primero necesitamos buscar o crear el curso
+      let courseId = null;
+      
+      // Buscar si el curso existe
+      const existingCourse = courses.find(
+        c => c.name.toLowerCase() === simpleTopicForm.courseName.toLowerCase()
+      );
+      
+      if (existingCourse) {
+        courseId = existingCourse.id;
+      } else {
+        // Si no existe, crear el curso primero
+        try {
+          const courseResponse = await axios.post(
+            'http://localhost:5000/api/academic/courses',
+            {
+              user_id: parseInt(userId),
+              name: simpleTopicForm.courseName,
+              category: 'general',
+              icon: 'BookOpen',
+              color: 'blue'
+            }
+          );
+          courseId = courseResponse.data.id;
+          // Recargar la lista de cursos
+          await loadCourses();
+        } catch (courseError) {
+          console.error('Error creando curso:', courseError);
+          alert(`Error al crear el curso: ${courseError.response?.data?.error || courseError.message}`);
+          return;
+        }
+      }
+      
+      // Ahora crear la línea de tiempo con el course_id
       const response = await axios.post(
-        'http://localhost:5000/api/timeline/topic',
+        'http://localhost:5000/api/timeline/topic/create',
         {
           user_id: parseInt(userId),
-          course_name: simpleTopicForm.courseName,
-          topic_name: simpleTopicForm.topicName,
-          description: simpleTopicForm.description || null
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+          course_id: courseId,
+          course_topic: simpleTopicForm.topicName,
+          title: `${simpleTopicForm.courseName} - ${simpleTopicForm.topicName}`,
+          description: simpleTopicForm.description || `Línea de tiempo para estudiar ${simpleTopicForm.topicName}`
         }
       );
 
-      alert(`✅ Línea de tiempo de tema creada: ${simpleTopicForm.topicName}`);
+      alert(`✅ Línea de tiempo creada: ${simpleTopicForm.topicName}`);
       setShowSimpleTopicModal(false);
       setSimpleTopicForm({ courseName: '', topicName: '', description: '' });
       loadTimelines();

@@ -53,17 +53,34 @@ class WritingEvaluator:
     @staticmethod
     def _get_model():
         """Obtiene el modelo de Gemini configurado"""
-        preferred = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-exp')
-        try:
-            return genai.GenerativeModel(preferred)
-        except Exception:
-            # Fallback a modelos alternativos
-            for candidate in ['gemini-1.5-flash', 'gemini-pro']:
-                try:
-                    return genai.GenerativeModel(candidate)
-                except Exception:
-                    continue
-            return genai.GenerativeModel(preferred)
+        preferred = os.environ.get('GEMINI_MODEL', 'gemini-1.5-pro')
+        
+        # Lista de modelos a intentar en orden
+        models_to_try = [
+            preferred,
+            'gemini-1.5-pro',
+            'gemini-1.5-flash',
+            'gemini-1.5-pro-latest',
+            'gemini-pro'
+        ]
+        
+        # Eliminar duplicados manteniendo el orden
+        models_to_try = list(dict.fromkeys(models_to_try))
+        
+        last_error = None
+        for model_name in models_to_try:
+            try:
+                print(f"   Intentando modelo: {model_name}")
+                model = genai.GenerativeModel(model_name)
+                print(f"   ✅ Modelo seleccionado: {model_name}")
+                return model
+            except Exception as e:
+                last_error = e
+                print(f"   ⚠️ Modelo {model_name} no disponible: {e}")
+                continue
+        
+        # Si ninguno funciona, lanzar el último error
+        raise Exception(f"No se pudo cargar ningún modelo. Último error: {last_error}")
     
     @staticmethod
     def extract_text(file_path: str) -> str:
@@ -201,10 +218,13 @@ class WritingEvaluator:
         Evalúa el texto usando Gemini AI
         
         Análisis profundo:
-        - Gramática y ortografía
+        - Gramática y ortografía con errores específicos
         - Coherencia y cohesión
         - Vocabulario y estilo
         - Estructura y organización
+        - Análisis de tono y formalidad
+        - Nivel de complejidad
+        - Sugerencias específicas de corrección
         - Comparación con versión anterior (si existe)
         
         Args:
@@ -212,10 +232,10 @@ class WritingEvaluator:
             previous_text: Texto de versión anterior (opcional)
             
         Returns:
-            dict: Reporte de evaluación con scores y recomendaciones
+            dict: Reporte de evaluación con scores y recomendaciones detalladas
         """
         try:
-            print("🤖 Evaluando con Gemini AI...")
+            print("🤖 Evaluando con Gemini AI (Análisis Profundo)...")
             
             WritingEvaluator._configure_gemini()
             model = WritingEvaluator._get_model()
@@ -223,9 +243,9 @@ class WritingEvaluator:
             # Construir prompt según si hay comparación o no
             if previous_text:
                 prompt = f"""
-Eres un profesor experto en redacción y escritura académica.
+Eres un profesor experto en redacción y escritura académica con enfoque en corrección detallada.
 
-TAREA: Evalúa el progreso del estudiante comparando dos versiones de su escrito.
+TAREA: Evalúa el progreso del estudiante comparando dos versiones de su escrito. Proporciona análisis EXHAUSTIVO.
 
 VERSIÓN ANTERIOR:
 {previous_text[:3000]}
@@ -241,42 +261,93 @@ FORMATO DE SALIDA (JSON):
   "vocabulary_score": 85,
   "structure_score": 88,
   "improvement_percentage": 15,
+  
+  "tone_analysis": "académico",
+  "formality_score": 85,
+  "complexity_level": "intermedio-avanzado",
+  
+  "specific_errors": [
+    {{
+      "type": "ortografía",
+      "error": "havía",
+      "correction": "había",
+      "location": "párrafo 2",
+      "explanation": "La 'h' es necesaria en el verbo haber"
+    }},
+    {{
+      "type": "concordancia",
+      "error": "los datos muestra",
+      "correction": "los datos muestran",
+      "location": "párrafo 3",
+      "explanation": "El verbo debe concordar en plural con 'datos'"
+    }}
+  ],
+  
+  "suggestions": [
+    {{
+      "category": "estructura",
+      "suggestion": "Conecta el párrafo 2 y 3 con una transición",
+      "example": "Por otro lado, ...",
+      "priority": "alta"
+    }},
+    {{
+      "category": "vocabulario",
+      "suggestion": "Reemplaza 'cosa' por término más específico",
+      "example": "elemento, aspecto, característica",
+      "priority": "media"
+    }}
+  ],
+  
   "strengths": [
-    "Mejor uso de conectores",
-    "Vocabulario más variado",
-    "Argumentación más clara"
+    "Mejor uso de conectores lógicos",
+    "Vocabulario técnico más preciso",
+    "Argumentación más sólida con ejemplos",
+    "Estructura clara con introducción-desarrollo-conclusión"
   ],
+  
   "weaknesses": [
-    "Algunos errores de puntuación",
-    "Párrafos demasiado largos"
+    "Algunos errores de puntuación en oraciones largas",
+    "Párrafos desbalanceados (algunos muy largos)",
+    "Uso repetitivo de 'sin embargo'"
   ],
+  
   "improvements_made": [
-    "Corrigió 3 errores ortográficos",
-    "Mejoró la introducción",
-    "Añadió ejemplos concretos"
+    "Corrigió 3 errores ortográficos previos",
+    "Mejoró la introducción con contexto más claro",
+    "Añadió 2 ejemplos concretos en el desarrollo",
+    "Redujo uso de muletillas ('entonces', 'pues')"
   ],
+  
   "recommendations": [
-    "Revisar el uso de comas",
-    "Dividir párrafos largos",
-    "Agregar más transiciones entre ideas"
+    "Revisar uso de comas en oraciones compuestas",
+    "Dividir párrafo 4 en dos partes temáticas",
+    "Variar conectores: 'no obstante', 'por el contrario'",
+    "Agregar más datos o estadísticas para respaldar argumentos",
+    "Revisar consistencia en tiempos verbales (presente vs pasado)"
   ],
-  "summary": "El estudiante muestra una mejora significativa en su escritura..."
+  
+  "summary": "El estudiante muestra una mejora significativa en su escritura. La estructura es más clara y los argumentos están mejor desarrollados. Los principales avances son en vocabulario y coherencia. Se recomienda enfocarse en la puntuación y en la variedad de conectores para alcanzar un nivel avanzado."
 }}
 
 REGLAS:
 1. Responde ÚNICAMENTE con el objeto JSON (sin ```json ni texto adicional)
 2. Scores del 0-100 (100 = excelente)
-3. improvement_percentage: % de mejora respecto a versión anterior
-4. Sé específico y constructivo en los comentarios
-5. Enfócate en el progreso y áreas de mejora
+3. tone_analysis: formal/informal/académico/técnico/narrativo
+4. formality_score: 0-100 (0=muy informal, 100=muy formal)
+5. complexity_level: básico/intermedio/intermedio-avanzado/avanzado
+6. specific_errors: mínimo 3, máximo 10 errores más relevantes
+7. suggestions: mínimo 3 sugerencias prácticas con ejemplos
+8. improvement_percentage: % de mejora respecto a versión anterior
+9. Sé MUY ESPECÍFICO: localiza errores, da ejemplos concretos
+10. Prioriza feedback ACCIONABLE que el estudiante pueda aplicar
 
-GENERA LA EVALUACIÓN:
+GENERA LA EVALUACIÓN EXHAUSTIVA:
 """
             else:
                 prompt = f"""
-Eres un profesor experto en redacción y escritura académica.
+Eres un profesor experto en redacción y escritura académica con enfoque en corrección detallada.
 
-TAREA: Evalúa la calidad del siguiente escrito del estudiante.
+TAREA: Evalúa la calidad del siguiente escrito del estudiante. Proporciona análisis EXHAUSTIVO con todos los detalles.
 
 TEXTO A EVALUAR:
 {text[:4000]}
@@ -288,32 +359,104 @@ FORMATO DE SALIDA (JSON):
   "coherence_score": 70,
   "vocabulary_score": 75,
   "structure_score": 78,
+  
+  "tone_analysis": "académico",
+  "formality_score": 80,
+  "complexity_level": "intermedio",
+  
+  "specific_errors": [
+    {{
+      "type": "ortografía",
+      "error": "aver",
+      "correction": "haber",
+      "location": "párrafo 1, línea 3",
+      "explanation": "'Haber' como verbo auxiliar siempre lleva 'h'"
+    }},
+    {{
+      "type": "puntuación",
+      "error": "...idea sin embargo...",
+      "correction": "...idea. Sin embargo, ...",
+      "location": "párrafo 2",
+      "explanation": "Los conectores entre oraciones requieren punto antes y coma después"
+    }},
+    {{
+      "type": "concordancia",
+      "error": "el grupo de estudiantes participaron",
+      "correction": "el grupo de estudiantes participó",
+      "location": "párrafo 3",
+      "explanation": "El núcleo del sujeto es 'grupo' (singular)"
+    }}
+  ],
+  
+  "suggestions": [
+    {{
+      "category": "estructura",
+      "suggestion": "Agregar párrafo de introducción más desarrollado",
+      "example": "Comenzar con contexto general antes de presentar la tesis",
+      "priority": "alta"
+    }},
+    {{
+      "category": "vocabulario",
+      "suggestion": "Reemplazar palabras genéricas por términos específicos",
+      "example": "'aspecto' → 'característica', 'dimensión', 'factor'",
+      "priority": "alta"
+    }},
+    {{
+      "category": "coherencia",
+      "suggestion": "Usar más conectores entre párrafos",
+      "example": "Agregar: 'Por consiguiente', 'En contraste', 'Adicionalmente'",
+      "priority": "media"
+    }},
+    {{
+      "category": "gramática",
+      "suggestion": "Revisar uso de gerundios al inicio de oraciones",
+      "example": "Evitar: 'Siendo importante...' → Mejor: 'Como es importante...'",
+      "priority": "media"
+    }}
+  ],
+  
   "strengths": [
-    "Ideas bien fundamentadas",
-    "Uso correcto de vocabulario técnico",
-    "Buena estructura de introducción"
+    "Ideas bien fundamentadas con ejemplos concretos",
+    "Uso correcto de vocabulario técnico en el tema",
+    "Buena estructura de introducción con tesis clara",
+    "Párrafos con longitud adecuada (5-7 oraciones)"
   ],
+  
   "weaknesses": [
-    "Faltan conectores entre párrafos",
-    "Algunos errores de concordancia",
-    "Conclusión muy breve"
+    "Faltan conectores entre párrafos 2 y 3",
+    "3 errores de concordancia género-número",
+    "Conclusión muy breve (solo 2 oraciones)",
+    "Uso repetitivo de 'es importante' (aparece 5 veces)",
+    "Falta de citas o referencias para respaldar afirmaciones"
   ],
+  
   "recommendations": [
-    "Usar más conectores (sin embargo, por lo tanto, además)",
-    "Revisar concordancia de género y número",
-    "Ampliar la conclusión con implicaciones",
-    "Agregar ejemplos concretos"
+    "Usar más conectores lógicos: 'sin embargo', 'por lo tanto', 'además'",
+    "Revisar concordancia de género y número en todos los párrafos",
+    "Ampliar la conclusión: incluir implicaciones y reflexión final",
+    "Agregar 2-3 ejemplos concretos en los argumentos principales",
+    "Variar el vocabulario: evitar repetición de palabras clave",
+    "Dividir oraciones muy largas (más de 25 palabras) en dos",
+    "Incluir datos o estadísticas para fortalecer argumentos",
+    "Revisar consistencia en tiempos verbales (presente/pasado)"
   ],
-  "summary": "Un escrito sólido con ideas claras, pero necesita trabajo en coherencia y transiciones..."
+  
+  "summary": "Un escrito sólido con ideas claras y bien fundamentadas. El autor demuestra conocimiento del tema y capacidad de argumentación. Los puntos fuertes son la estructura lógica y el uso de vocabulario técnico. Sin embargo, necesita trabajo en: 1) coherencia entre párrafos (más conectores), 2) revisión gramatical (concordancias), y 3) desarrollo de la conclusión. Con estas mejoras, el texto alcanzaría un nivel avanzado."
 }}
 
 REGLAS:
 1. Responde ÚNICAMENTE con el objeto JSON (sin ```json ni texto adicional)
 2. Scores del 0-100 (100 = excelente)
-3. Sé específico y constructivo
-4. Enfócate en áreas de mejora concretas
+3. tone_analysis: formal/informal/académico/técnico/narrativo/persuasivo
+4. formality_score: 0-100 (0=muy informal, 100=muy formal)
+5. complexity_level: básico/intermedio/intermedio-avanzado/avanzado
+6. specific_errors: mínimo 3, máximo 12 errores concretos con ubicación
+7. suggestions: mínimo 4 sugerencias con ejemplos específicos
+8. Sé MUY ESPECÍFICO: localiza errores, da ejemplos de corrección
+9. En recommendations: mínimo 6 recomendaciones prácticas y accionables
+10. En summary: análisis de 3-4 oraciones con fortalezas, debilidades y pasos a seguir
 
-GENERA LA EVALUACIÓN:
+GENERA LA EVALUACIÓN EXHAUSTIVA:
 """
             
             print("  🚀 Enviando a Gemini...")
@@ -325,6 +468,10 @@ GENERA LA EVALUACIÓN:
             evaluation = json.loads(clean_text)
             
             print(f"  ✅ Evaluación completada - Score: {evaluation.get('overall_score', 'N/A')}/100")
+            print(f"  📊 Errores detectados: {len(evaluation.get('specific_errors', []))}")
+            print(f"  💡 Sugerencias: {len(evaluation.get('suggestions', []))}")
+            print(f"  🎯 Tono: {evaluation.get('tone_analysis', 'N/A')}")
+            print(f"  📏 Formalidad: {evaluation.get('formality_score', 'N/A')}/100")
             
             return evaluation
         
@@ -361,20 +508,51 @@ GENERA LA EVALUACIÓN:
             'coherence_score': round(coherence_score),
             'vocabulary_score': round(vocabulary_score),
             'structure_score': round(structure_score),
+            'tone_analysis': 'neutro',
+            'formality_score': 50,
+            'complexity_level': 'intermedio',
+            'specific_errors': [
+                {
+                    'type': 'sistema',
+                    'error': 'Análisis de IA no disponible',
+                    'correction': 'Revisar manualmente',
+                    'location': 'N/A',
+                    'explanation': 'Se requiere revisión manual completa'
+                }
+            ],
+            'suggestions': [
+                {
+                    'category': 'general',
+                    'suggestion': 'Revisar gramática y ortografía con herramienta externa',
+                    'example': 'Usar corrector ortográfico',
+                    'priority': 'alta'
+                },
+                {
+                    'category': 'coherencia',
+                    'suggestion': 'Verificar coherencia entre párrafos',
+                    'example': 'Agregar conectores lógicos',
+                    'priority': 'alta'
+                }
+            ],
             'strengths': [
                 f"Vocabulario rico con {metrics['vocabulary_size']} palabras únicas",
-                f"Buena extensión: {metrics['word_count']} palabras"
+                f"Buena extensión: {metrics['word_count']} palabras",
+                f"Legibilidad adecuada: {metrics['readability_score']}/100"
             ],
             'weaknesses': [
                 "Evaluación limitada (IA no disponible)",
-                "Se recomienda revisión manual"
+                "Se recomienda revisión manual completa",
+                "No se pudieron detectar errores específicos"
             ],
             'recommendations': [
                 "Revisar gramática y ortografía manualmente",
                 "Verificar coherencia entre párrafos",
-                "Usar herramientas de corrección adicionales"
+                "Usar herramientas de corrección adicionales",
+                "Pedir retroalimentación a un profesor o tutor",
+                "Leer en voz alta para detectar errores",
+                "Revisar consistencia en tiempos verbales"
             ],
-            'summary': f"Evaluación básica: {metrics['word_count']} palabras, {metrics['sentence_count']} oraciones, legibilidad {metrics['readability_score']}/100"
+            'summary': f"Evaluación básica: {metrics['word_count']} palabras, {metrics['sentence_count']} oraciones, legibilidad {metrics['readability_score']}/100. Se requiere análisis más profundo con IA o revisión manual."
         }
         
         # Si hay versión previa, calcular mejora

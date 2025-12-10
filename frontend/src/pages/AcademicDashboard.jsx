@@ -3,7 +3,7 @@ import {
   BookOpen, Calendar, CheckCircle, Plus, Brain, FileText, 
   Upload, RefreshCw, Trash2, CheckSquare, Square, Clock, X,
   Download, Search, Filter, TrendingUp, BookMarked, Layers,
-  FolderOpen, BarChart3, FileCheck
+  FolderOpen, BarChart3, FileCheck, History
 } from 'lucide-react';
 import Stopwatch from '../components/Stopwatch';
 import TimelineViewer from '../components/TimelineViewer';
@@ -12,7 +12,8 @@ import EvolutionChart from '../components/EvolutionChart';
 import TimelineCreator from '../components/Timeline/TimelineCreator'; // 🆕 Timeline con creador
 import SyllabusAnalyzerPro from '../components/Syllabus/SyllabusAnalyzerPro'; // 🆕 Syllabus con historial
 import CourseManagerPro from '../components/Courses/CourseManagerPro'; // 🆕 Cursos con iconos
-import WritingEvaluator from '../components/WritingEvaluator'; // 🆕 Evaluador de escritura 
+import WritingEvaluator from '../components/WritingEvaluatorImproved'; // 🆕 Evaluador mejorado
+import EventsTimelineView from './EventsTimelineView'; // 🆕 Líneas de tiempo de eventos históricos 
 
 // --- COMPONENTE HERRAMIENTAS IA ---
 const StudyTools = () => {
@@ -568,6 +569,12 @@ const AcademicDashboard = () => {
         >
           <FileCheck size={16} /> Escritura
         </button>
+        <button 
+            onClick={() => setActiveTab('events')} 
+            className={`flex-1 min-w-[140px] py-3 px-4 font-semibold text-xs flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ${activeTab === 'events' ? 'bg-gradient-to-r from-indigo-600 to-pink-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+        >
+          <History size={16} /> Eventos
+        </button>
       </div>
 
       {activeTab === 'dashboard' ? (
@@ -745,6 +752,9 @@ const AcademicDashboard = () => {
       ) : activeTab === 'writing' ? (
         /* 🆕 NUEVO: Evaluador de escritura con IA - compara versiones y genera reportes */
         <WritingEvaluator userId={USER_ID} />
+      ) : activeTab === 'events' ? (
+        /* 🆕 NUEVO: Líneas de tiempo de eventos históricos - NO vinculadas a proyectos */
+        <EventsTimelineView userId={USER_ID} />
       ) : null}
     </div>
   );

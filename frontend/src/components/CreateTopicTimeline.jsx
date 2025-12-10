@@ -27,11 +27,11 @@ const CreateTopicTimeline = ({ onTimelineCreated, onCancel, userId }) => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/timeline/topic',
+        'http://localhost:5000/api/timelines/topic/create',
         {
           user_id: userId,
           course_name: courseName,
-          topic_name: topicName,
+          course_topic: topicName,
           description: description || null
         },
         {
