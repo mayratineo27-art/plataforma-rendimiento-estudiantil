@@ -45,22 +45,39 @@ const SesionTiempoReal = () => {
       setLoading(true);
       setIsRecording(false);
 
-      await videoAudioService.endSession(sessionId);
+      // Detener la sesión
+      const endResponse = await videoAudioService.endSession(sessionId);
+      console.log('✅ Sesión detenida:', endResponse);
       
-      // Obtener análisis final
-      const analysis = await videoAudioService.getSessionAnalysis(sessionId);
-      setSessionData({
-        emociones: analysis.emociones || [],
-        transcripciones: analysis.transcripciones || [],
-        atencionPromedio: analysis.atencion_promedio || 0,
-        duracion: analysis.duracion || 0
-      });
+      // Intentar obtener análisis final (no bloquear si falla)
+      try {
+        const analysis = await videoAudioService.getSessionAnalysis(sessionId);
+        setSessionData({
+          emociones: analysis.emotions || [],
+          transcripciones: analysis.transcripciones || [],
+          atencionPromedio: analysis.atencion_promedio || 0,
+          duracion: analysis.duracion || 0
+        });
+        console.log('✅ Análisis obtenido:', analysis);
+      } catch (analysisErr) {
+        console.warn('⚠️ No se pudo obtener el análisis:', analysisErr);
+      }
 
-      console.log('Sesión finalizada:', analysis);
-      alert('¡Sesión completada! Análisis disponible en tu perfil.');
+      alert('¡Sesión detenida correctamente!');
+      
+      // Resetear estado
+      setSessionId(null);
+      setSessionData({
+        emociones: [],
+        transcripciones: [],
+        atencionPromedio: 0,
+        duracion: 0
+      });
+      
     } catch (err) {
-      setError('Error al finalizar la sesión');
-      console.error(err);
+      setError('Error al finalizar la sesión: ' + (err.response?.data?.message || err.message));
+      console.error('❌ Error:', err);
+      setIsRecording(true); // Reactivar grabación si falló
     } finally {
       setLoading(false);
     }

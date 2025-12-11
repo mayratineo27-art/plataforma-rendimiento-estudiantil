@@ -21,17 +21,32 @@ class AudioService:
             dict con transcripción y confianza
         """
         try:
-            # Convertir audio a WAV si es necesario
-            if not audio_file_path.endswith('.wav'):
-                audio_file_path = self._convert_to_wav(audio_file_path)
-
-            # Cargar audio
-            with sr.AudioFile(audio_file_path) as source:
-                # Ajustar para ruido ambiente
-                self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                
-                # Grabar audio
-                audio_data = self.recognizer.record(source)
+            # Para archivos webm, intentar convertir o procesar directamente
+            if audio_file_path.endswith('.webm'):
+                try:
+                    audio_file_path = self._convert_to_wav(audio_file_path)
+                except Exception as conv_err:
+                    print(f"⚠️ No se pudo convertir webm, intentando procesar directamente: {conv_err}")
+                    # Continuar con el archivo original
+            
+            # Para archivos wav, procesar directamente
+            if audio_file_path.endswith('.wav'):
+                # Cargar audio
+                with sr.AudioFile(audio_file_path) as source:
+                    # Ajustar para ruido ambiente
+                    self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                    
+                    # Grabar audio
+                    audio_data = self.recognizer.record(source)
+            else:
+                # Para otros formatos, intentar cargar directamente
+                print(f"⚠️ Formato no soportado: {audio_file_path}")
+                return {
+                    'text': '[Formato de audio no soportado]',
+                    'confidence': 0,
+                    'language': self.language,
+                    'success': False
+                }
 
             # Transcribir con Google Speech Recognition
             try:
@@ -104,3 +119,11 @@ class AudioService:
             return {'sentiment': 'negative', 'score': 0.7}
         else:
             return {'sentiment': 'neutral', 'score': 0.5}
+    
+    def transcribe_audio(self, audio_file_path):
+        """Alias para transcribe (compatibilidad)"""
+        return self.transcribe(audio_file_path)
+
+
+# Crear instancia global
+audio_service = AudioService()
