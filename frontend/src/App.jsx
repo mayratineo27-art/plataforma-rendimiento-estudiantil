@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 // import AnalisisProgreso from './pages/AnalisisProgreso'; // Ya no se usa en esta ruta
 import SesionTiempoReal from './pages/SesionTiempoReal';
+import AnalisisSesion from './pages/AnalisisSesion';
 import PerfilEstudiante from './pages/PerfilEstudiante';
 import Reportes from './pages/Reportes';
 import AcademicDashboard from './pages/AcademicDashboard';
@@ -30,6 +31,7 @@ function App() {
           <Route path="cursos" element={<CursosPage />} />
           
           <Route path="sesion" element={<SesionTiempoReal />} />
+          <Route path="sesion/:sessionId/analisis" element={<AnalisisSesion />} />
           <Route path="perfil" element={<PerfilEstudiante />} />
           <Route path="reportes" element={<Reportes />} />
         </Route>

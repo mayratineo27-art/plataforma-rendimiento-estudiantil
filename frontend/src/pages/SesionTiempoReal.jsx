@@ -2,11 +2,13 @@
 // Página principal para sesiones de video/audio en tiempo real
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import WebcamCapture from '../modules/modulo2-interaccion-tiempo-real/components/WebcamCapture';
 import AudioRecorder from '../modules/modulo2-interaccion-tiempo-real/components/AudioRecorder';
 import videoAudioService from '../modules/modulo2-interaccion-tiempo-real/services/videoAudioService';
 
 const SesionTiempoReal = () => {
+  const navigate = useNavigate();
   const [sessionId, setSessionId] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [sessionData, setSessionData] = useState({
@@ -25,29 +27,51 @@ const SesionTiempoReal = () => {
       setLoading(true);
       setError(null);
 
+      console.log('📤 Iniciando sesión para user_id:', userId);
       const response = await videoAudioService.startSession(userId);
-      setSessionId(response.session_id);
+      console.log('📥 Respuesta del backend:', response);
+      
+      // El backend devuelve { success, message, session: { id, ... } }
+      const sessionIdFromResponse = response.session?.id || response.session_id;
+      
+      if (!sessionIdFromResponse) {
+        console.error('❌ No se recibió session ID en la respuesta:', response);
+        setError('Error: No se recibió ID de sesión del servidor');
+        return;
+      }
+      
+      setSessionId(sessionIdFromResponse);
       setIsRecording(true);
       
-      console.log('Sesión iniciada:', response.session_id);
+      console.log('✅ Sesión iniciada con ID:', sessionIdFromResponse);
     } catch (err) {
-      setError('Error al iniciar la sesión');
-      console.error(err);
+      setError('Error al iniciar la sesión: ' + (err.response?.data?.message || err.message));
+      console.error('❌ Error al iniciar sesión:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleStopSession = async () => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.error('❌ No hay session ID para detener');
+      setError('No hay una sesión activa para detener');
+      return;
+    }
+
+    console.log('🛑 Intentando detener sesión:', sessionId);
 
     try {
       setLoading(true);
-      setIsRecording(false);
+      setError(null); // Limpiar errores previos
 
       // Detener la sesión
+      console.log('📤 Enviando petición para detener sesión...');
       const endResponse = await videoAudioService.endSession(sessionId);
       console.log('✅ Sesión detenida:', endResponse);
+      
+      // Marcar como no grabando después de confirmar el stop
+      setIsRecording(false);
       
       // Intentar obtener análisis final (no bloquear si falla)
       try {
@@ -63,16 +87,12 @@ const SesionTiempoReal = () => {
         console.warn('⚠️ No se pudo obtener el análisis:', analysisErr);
       }
 
-      alert('¡Sesión detenida correctamente!');
+      alert('¡Sesión detenida correctamente! Redirigiendo al análisis completo...');
       
-      // Resetear estado
+      // Redirigir al análisis completo
+      const sessionIdToAnalyze = sessionId;
       setSessionId(null);
-      setSessionData({
-        emociones: [],
-        transcripciones: [],
-        atencionPromedio: 0,
-        duracion: 0
-      });
+      navigate(`/sesion/${sessionIdToAnalyze}/analisis`);
       
     } catch (err) {
       setError('Error al finalizar la sesión: ' + (err.response?.data?.message || err.message));

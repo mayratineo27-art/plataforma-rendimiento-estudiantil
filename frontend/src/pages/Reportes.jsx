@@ -46,9 +46,15 @@ const Reportes = () => {
       if (result.success) {
         alert('¡Reporte generado exitosamente!');
         await loadData(); // Recargar lista
+      } else {
+        // Si el backend devuelve success: false pero sin error HTTP
+        const errorMsg = result.message || result.error || 'Error desconocido';
+        alert(`❌ No se pudo generar el reporte:\n\n${errorMsg}`);
       }
     } catch (err) {
-      alert('Error al generar reporte: ' + (err.response?.data?.error || err.message));
+      console.error('Error generando reporte:', err);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'Error de conexión';
+      alert(`❌ Error al generar reporte:\n\n${errorMsg}`);
     } finally {
       setGeneratingNew(false);
     }

@@ -53,29 +53,76 @@ const PerfilEstudiante = () => {
   const stats = visualizations?.charts?.summary_stats || {};
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-4xl">
-              👤
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Header Mejorado */}
+      <header className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
+            {/* Avatar con efecto glassmorphism */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-pink-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
+              <div className="relative w-32 h-32 bg-gradient-to-br from-white to-blue-100 rounded-full flex items-center justify-center text-6xl shadow-2xl ring-4 ring-white/50 backdrop-blur-sm">
+                👤
+              </div>
+              <div className="absolute bottom-0 right-0 w-10 h-10 bg-green-500 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+                <span className="text-white text-xl">✓</span>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">Juan Perez</h1>
-              <p className="text-blue-100">Estudiante de Ingeniería</p>
-              <p className="text-sm text-blue-200 mt-1">
-                Estilo de aprendizaje: {profile?.learning_style || 'incializando...'}
-              </p>
+            
+            {/* Información del perfil */}
+            <div className="flex-1 text-center md:text-left">
+              <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-full px-4 py-1 mb-3">
+                <span className="text-xs font-semibold uppercase tracking-wider">Perfil Activo</span>
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
+                Juan Perez
+              </h1>
+              
+              <p className="text-xl text-blue-100 font-medium mb-3">Estudiante de Ingeniería</p>
+              
+              <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-lg px-4 py-2">
+                  <span className="text-2xl">🎓</span>
+                  <span className="text-sm font-medium">
+                    {profile?.learning_style || 'Analizando estilo...'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-lg px-4 py-2">
+                  <span className="text-2xl">📊</span>
+                  <span className="text-sm font-medium">Nivel Intermedio</span>
+                </div>
+                
+                <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-lg px-4 py-2">
+                  <span className="text-2xl">🔥</span>
+                  <span className="text-sm font-medium">Racha de 7 días</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Botón de acción */}
+            <div className="flex flex-col space-y-3">
+              <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition transform hover:scale-105 shadow-xl">
+                ✏️ Editar Perfil
+              </button>
+              <button className="bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition">
+                📄 Ver Reportes
+              </button>
             </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Tabs de Secciones */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
+        {/* Tabs de Secciones Mejorados */}
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mb-8 overflow-hidden border border-white/20">
+          <div className="border-b border-gray-200/50">
             <nav className="flex -mb-px">
               <SectionTab
                 active={activeSection === 'overview'}
@@ -116,20 +163,23 @@ const PerfilEstudiante = () => {
   );
 };
 
-// Componente Tab
+// Componente Tab Mejorado
 const SectionTab = ({ active, onClick, icon, label }) => (
   <button
     onClick={onClick}
     className={`
-      py-4 px-6 font-medium text-sm flex items-center space-x-2
+      relative py-4 px-8 font-semibold text-sm flex items-center space-x-3 transition-all duration-300
       ${active
-        ? 'border-b-2 border-blue-500 text-blue-600'
-        : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        ? 'text-blue-600'
+        : 'text-gray-500 hover:text-gray-700'
       }
     `}
   >
-    <span>{icon}</span>
+    <span className="text-xl">{icon}</span>
     <span>{label}</span>
+    {active && (
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full"></div>
+    )}
   </button>
 );
 
@@ -164,16 +214,31 @@ const OverviewSection = ({ profile, stats }) => (
       />
     </div>
 
-    {/* Resumen IA */}
+    {/* Resumen IA Mejorado */}
     {profile?.summary && (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-          <span className="mr-2">🤖</span>
-          Análisis con IA
-        </h2>
-        <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-          {profile.summary}
-        </p>
+      <div className="relative bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+        
+        <div className="relative">
+          <div className="flex items-center space-x-3 mb-5">
+            <div className="bg-white/20 backdrop-blur-md rounded-xl p-3">
+              <span className="text-4xl">🤖</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white">Análisis Inteligente con IA</h2>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+            <p className="text-white/90 text-lg leading-relaxed whitespace-pre-line">
+              {profile.summary}
+            </p>
+          </div>
+          
+          <div className="mt-4 flex items-center space-x-2 text-white/80 text-sm">
+            <span>⚡</span>
+            <span>Generado con Gemini 2.5 Flash</span>
+          </div>
+        </div>
       </div>
     )}
 
@@ -191,20 +256,25 @@ const OverviewSection = ({ profile, stats }) => (
       />
     </div>
 
-    {/* Recomendaciones */}
+    {/* Recomendaciones Mejoradas */}
     {profile?.recommendations && profile.recommendations.length > 0 && (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-bold text-purple-700 mb-4 flex items-center">
-          <span className="mr-2">💡</span>
-          Recomendaciones
-        </h3>
-        <ol className="space-y-3">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 border border-white/20">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl p-3 shadow-lg">
+            <span className="text-3xl">💡</span>
+          </div>
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Recomendaciones Personalizadas
+          </h3>
+        </div>
+        
+        <ol className="space-y-4">
           {profile.recommendations.map((rec, index) => (
-            <li key={index} className="flex items-start">
-              <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+            <li key={index} className="group flex items-start bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 hover:shadow-md transition-all duration-300">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl flex items-center justify-center text-lg font-bold mr-4 shadow-lg group-hover:scale-110 transition-transform">
                 {index + 1}
-              </span>
-              <span className="text-gray-700">{rec}</span>
+              </div>
+              <span className="text-gray-700 leading-relaxed pt-2">{rec}</span>
             </li>
           ))}
         </ol>
@@ -525,50 +595,98 @@ const List = ({ items, emptyText, numbered = false }) => {
 // Componente StatCard
 const StatCard = ({ title, value, icon, color }) => {
   const colors = {
-    blue: 'from-blue-500 to-blue-600',
-    green: 'from-green-500 to-green-600',
-    purple: 'from-purple-500 to-purple-600',
-    orange: 'from-orange-500 to-orange-600',
+    blue: {
+      gradient: 'from-blue-500 via-blue-600 to-indigo-600',
+      bg: 'bg-blue-50',
+      text: 'text-blue-600',
+      ring: 'ring-blue-200'
+    },
+    green: {
+      gradient: 'from-green-500 via-emerald-600 to-teal-600',
+      bg: 'bg-green-50',
+      text: 'text-green-600',
+      ring: 'ring-green-200'
+    },
+    purple: {
+      gradient: 'from-purple-500 via-violet-600 to-purple-600',
+      bg: 'bg-purple-50',
+      text: 'text-purple-600',
+      ring: 'ring-purple-200'
+    },
+    orange: {
+      gradient: 'from-orange-500 via-amber-600 to-orange-600',
+      bg: 'bg-orange-50',
+      text: 'text-orange-600',
+      ring: 'ring-orange-200'
+    },
   };
 
+  const colorScheme = colors[color];
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className={`bg-gradient-to-r ${colors[color]} p-4`}>
-        <div className="flex items-center justify-between">
-          <span className="text-4xl">{icon}</span>
-          <span className="text-3xl font-bold text-white">{value}</span>
+    <div className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-white/20 hover:scale-105">
+      <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+      
+      <div className={`bg-gradient-to-br ${colorScheme.gradient} p-6`}>
+        <div className="flex items-start justify-between">
+          <div className={`${colorScheme.bg} rounded-xl p-3 ring-4 ${colorScheme.ring} shadow-lg`}>
+            <span className="text-4xl">{icon}</span>
+          </div>
+          <div className="text-right">
+            <div className="text-4xl font-bold text-white drop-shadow-lg">{value}</div>
+          </div>
         </div>
       </div>
-      <div className="p-4">
-        <h3 className="text-sm font-semibold text-gray-600">{title}</h3>
+      
+      <div className="p-5">
+        <h3 className={`text-sm font-bold uppercase tracking-wider ${colorScheme.text}`}>{title}</h3>
       </div>
     </div>
   );
 };
 
-// Componente ListCard
+// Componente ListCard Mejorado
 const ListCard = ({ title, items, color }) => {
   const colorClasses = {
-    green: 'text-green-500',
-    orange: 'text-orange-500',
+    green: {
+      icon: '✓',
+      iconBg: 'bg-green-100',
+      iconText: 'text-green-600',
+      border: 'border-green-200',
+      title: 'text-green-700'
+    },
+    orange: {
+      icon: '→',
+      iconBg: 'bg-orange-100',
+      iconText: 'text-orange-600',
+      border: 'border-orange-200',
+      title: 'text-orange-700'
+    },
   };
 
+  const scheme = colorClasses[color];
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-xl font-bold mb-4">{title}</h3>
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-white/20">
+      <h3 className={`text-xl font-bold mb-5 ${scheme.title} flex items-center`}>
+        {title}
+      </h3>
       {items && items.length > 0 ? (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {items.map((item, index) => (
-            <li key={index} className="flex items-start">
-              <span className={`${colorClasses[color]} mr-2 flex-shrink-0`}>
-                {color === 'green' ? '✓' : '→'}
-              </span>
-              <span className="text-gray-700">{item}</span>
+            <li key={index} className="flex items-start group">
+              <div className={`${scheme.iconBg} ${scheme.iconText} rounded-lg p-2 mr-3 flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                <span className="font-bold text-sm">{scheme.icon}</span>
+              </div>
+              <span className="text-gray-700 leading-relaxed pt-1">{item}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-gray-500 italic">Sin información disponible</p>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-2">📊</div>
+          <p className="text-gray-500 italic">Sin información disponible</p>
+        </div>
       )}
     </div>
   );

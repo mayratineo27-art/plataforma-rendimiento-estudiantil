@@ -50,6 +50,13 @@ class AttentionMetrics(db.Model):
     # Ejemplo: {"confusion_percentage": 25.5, "clarity_moments": 3}
     comprehension_indicators = db.Column(db.JSON)
     
+    # Métricas adicionales de análisis
+    face_presence_rate = db.Column(db.Numeric(5, 2))  # Porcentaje de presencia del rostro
+    confusion_percentage = db.Column(db.Numeric(5, 2))  # Porcentaje de confusión
+    confusion_peaks = db.Column(db.Integer, default=0)  # Picos de confusión detectados
+    comprehension_percentage = db.Column(db.Numeric(5, 2))  # Porcentaje de comprensión
+    clarity_moments = db.Column(db.Integer, default=0)  # Momentos de claridad
+    
     # Flags de detección
     confusion_detected = db.Column(db.Boolean, default=False)
     boredom_detected = db.Column(db.Boolean, default=False)
@@ -258,6 +265,11 @@ class AttentionMetrics(db.Model):
             'engagement_level': self.engagement_level,
             'predominant_emotions': self.predominant_emotions,
             'comprehension_indicators': self.comprehension_indicators,
+            'face_presence_rate': float(self.face_presence_rate) if self.face_presence_rate else None,
+            'confusion_percentage': float(self.confusion_percentage) if self.confusion_percentage else None,
+            'confusion_peaks': self.confusion_peaks,
+            'comprehension_percentage': float(self.comprehension_percentage) if self.comprehension_percentage else None,
+            'clarity_moments': self.clarity_moments,
             'confusion_detected': self.confusion_detected,
             'boredom_detected': self.boredom_detected,
             'is_high_attention': self.is_high_attention,

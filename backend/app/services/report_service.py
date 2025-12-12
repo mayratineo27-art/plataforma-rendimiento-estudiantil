@@ -59,15 +59,17 @@ class ReportService:
             # Verificar usuario
             user = User.query.get(user_id)
             if not user:
+                self.logger.error(f"Usuario {user_id} no encontrado")
                 return {'success': False, 'error': 'Usuario no encontrado'}
             
             # Obtener perfil
             profile = StudentProfile.query.filter_by(user_id=user_id).first()
             if not profile:
+                self.logger.error(f"No hay perfil generado para user_id={user_id}")
                 return {
                     'success': False,
                     'error': 'No hay perfil generado',
-                    'message': 'Genera el perfil primero con GET /api/profile/<user_id>'
+                    'message': 'Debes generar tu perfil primero. Ve a "Avatar Personal" → "Generar Perfil"'
                 }
             
             # Crear registro de reporte en BD
@@ -80,6 +82,8 @@ class ReportService:
             )
             db.session.add(report)
             db.session.commit()
+            
+            self.logger.info(f"Reporte creado con ID={report.id}")
             
             result = {
                 'success': True,

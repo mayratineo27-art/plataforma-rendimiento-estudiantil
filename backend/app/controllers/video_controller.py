@@ -13,10 +13,14 @@ from app.models.attention_metrics import AttentionMetrics
 import cv2
 import numpy as np
 import base64
+import logging
 
 # Importación de servicios de video - TODOS ACTIVOS
 from app.services.video_processing.emotion_recognition import emotion_service
+from app.services.ai.attention_analyzer import attention_analyzer
 EMOTION_SERVICE_AVAILABLE = True
+
+logger = logging.getLogger(__name__)
 
 
 class VideoController:
@@ -228,15 +232,22 @@ class VideoController:
                 .order_by(AttentionMetrics.time_interval_start)\
                 .all()
             
+            # Calcular promedio si hay métricas pero no está guardado en sesión
+            avg_score = float(session.avg_attention_score) if session.avg_attention_score else 0
+            if not avg_score and metrics:
+                scores = [float(m.attention_score or 0) for m in metrics]
+                avg_score = sum(scores) / len(scores) if scores else 0
+            
             return jsonify({
                 'success': True,
                 'session_id': session_id,
                 'total_metrics': len(metrics),
-                'avg_attention_score': session.avg_attention_score,
+                'avg_attention_score': round(avg_score, 2),
                 'metrics': [m.to_dict() for m in metrics]
             }), 200
             
         except Exception as e:
+            logger.error(f"Error al obtener métricas: {str(e)}", exc_info=True)
             return jsonify({
                 'error': True,
                 'message': f'Error al obtener métricas: {str(e)}'
@@ -267,8 +278,9 @@ class VideoController:
             }), 500
     
     def _calculate_attention_metrics(self, session, interval_duration=30):
-        """Calcular métricas de atención por intervalos"""
+        """Calcular métricas de atención por intervalos usando el servicio de análisis"""
         if not session.duration_seconds:
+            logger.warning(f"⚠️  Sesión {session.id} sin duración, no se calculan métricas")
             return
         
         emotions = EmotionData.query.filter_by(session_id=session.id)\
@@ -276,9 +288,14 @@ class VideoController:
             .all()
         
         if not emotions:
+            logger.warning(f"⚠️  Sesión {session.id} sin emociones detectadas")
             return
         
+        logger.info(f"📊 Calculando métricas de atención para sesión {session.id}")
+        logger.info(f"   Total frames: {len(emotions)}, Duración: {session.duration_seconds}s")
+        
         current_time = 0
+        total_attention_scores = []
         
         while current_time < session.duration_seconds:
             interval_end = min(current_time + interval_duration, session.duration_seconds)
@@ -290,17 +307,60 @@ class VideoController:
             ]
             
             if interval_emotions:
+                # Convertir a formato para el analizador
+                emotions_data = []
+                for e in interval_emotions:
+                    emotion_dict = {
+                        'face_detected': e.face_detected,
+                        'dominant_emotion': e.dominant_emotion,
+                        'contextual_emotion': e.contextual_emotion,
+                        'emotion_scores': {
+                            'angry': float(e.angry or 0),
+                            'disgust': float(e.disgust or 0),
+                            'fear': float(e.fear or 0),
+                            'happy': float(e.happy or 0),
+                            'sad': float(e.sad or 0),
+                            'surprise': float(e.surprise or 0),
+                            'neutral': float(e.neutral or 0)
+                        }
+                    }
+                    emotions_data.append(emotion_dict)
+                
+                # Usar el servicio de análisis de atención
+                analysis = attention_analyzer.calculate_attention_score(emotions_data)
+                
+                # Crear métrica
                 metric = AttentionMetrics(
                     session_id=session.id,
                     user_id=session.user_id,
                     time_interval_start=current_time,
-                    time_interval_end=interval_end
+                    time_interval_end=interval_end,
+                    interval_duration_seconds=int(interval_end - current_time),
+                    attention_score=analysis['attention_score'],
+                    engagement_level=analysis['engagement_level'],
+                    predominant_emotions=analysis['predominant_emotions'],
+                    face_presence_rate=analysis['face_presence_rate'],
+                    confusion_percentage=analysis['confusion_indicators'].get('confusion_percentage', 0),
+                    confusion_peaks=analysis['confusion_indicators'].get('confusion_peaks', 0),
+                    comprehension_percentage=analysis['comprehension_indicators'].get('comprehension_percentage', 0),
+                    clarity_moments=analysis['comprehension_indicators'].get('clarity_moments', 0)
                 )
                 
-                metric.calculate_attention_score(interval_emotions)
                 db.session.add(metric)
+                total_attention_scores.append(analysis['attention_score'])
+                
+                logger.info(f"   ✅ Intervalo {current_time:.0f}-{interval_end:.0f}s: "
+                          f"Atención={analysis['attention_score']:.1f}, "
+                          f"Engagement={analysis['engagement_level']}")
             
             current_time = interval_end
+        
+        # Calcular promedio de atención para la sesión
+        if total_attention_scores:
+            avg_attention = sum(total_attention_scores) / len(total_attention_scores)
+            session.avg_attention_score = round(avg_attention, 2)
+            logger.info(f"   📈 Atención promedio de la sesión: {avg_attention:.2f}")
+
     
     def _calculate_emotion_statistics(self, emotions):
         """Calcular estadísticas de emociones"""

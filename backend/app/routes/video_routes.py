@@ -468,6 +468,43 @@ def get_session_transcriptions(session_id):
         }), 500
 
 
+@audio_bp.route('/session/<int:session_id>/summary', methods=['POST'])
+def generate_summary(session_id):
+    """
+    POST /api/audio/session/{id}/summary
+    Generar resumen inteligente de las transcripciones
+    """
+    if CONTROLLERS_AVAILABLE:
+        return audio_controller.generate_summary(session_id)
+    
+    try:
+        session = VideoSession.query.get(session_id)
+        if not session:
+            return jsonify({'error': 'Sesión no encontrada'}), 404
+        
+        transcriptions = AudioTranscription.query.filter_by(session_id=session_id).all()
+        
+        if not transcriptions:
+            return jsonify({'error': 'No hay transcripciones para resumir'}), 404
+        
+        full_text = ' '.join([t.text for t in transcriptions if t.text])
+        
+        return jsonify({
+            'success': True,
+            'summary': {
+                'resumen_basico': full_text[:300] + '...' if len(full_text) > 300 else full_text,
+                'word_count': len(full_text.split()),
+                'transcription_count': len(transcriptions)
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Error al generar resumen: {str(e)}'
+        }), 500
+
+
 @audio_bp.route('/sentiment', methods=['POST'])
 def analyze_sentiment():
     """

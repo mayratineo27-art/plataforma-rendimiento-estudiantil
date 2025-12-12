@@ -229,9 +229,14 @@ const Dashboard = () => {
       if (result.success) {
         alert('¡Reporte generado! Redirigiendo...');
         window.location.href = '/reportes';
+      } else {
+        const errorMsg = result.message || result.error || 'Error desconocido';
+        alert(`❌ No se pudo generar el reporte:\n\n${errorMsg}`);
       }
     } catch (err) {
-      alert('Error al generar reporte');
+      console.error('Error generando reporte:', err);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'Error de conexión';
+      alert(`❌ Error al generar reporte:\n\n${errorMsg}`);
     }
   };
 

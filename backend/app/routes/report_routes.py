@@ -84,9 +84,15 @@ def generate_report():
         
     except Exception as e:
         logger.error(f"Error en generate_report: {str(e)}")
+        logger.error(f"Tipo de error: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        
         return jsonify({
             'success': False,
-            'error': 'Error interno del servidor'
+            'error': 'Error al generar reporte',
+            'message': str(e),
+            'type': type(e).__name__
         }), 500
 
 
