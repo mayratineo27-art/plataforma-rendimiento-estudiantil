@@ -11,6 +11,7 @@ import SesionTiempoReal from './pages/SesionTiempoReal';
 import PerfilEstudiante from './pages/PerfilEstudiante';
 import Reportes from './pages/Reportes';
 import AcademicDashboard from './pages/AcademicDashboard';
+import CursosPage from './pages/CursosPage';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route index element={<Dashboard />} />
           
           <Route path="analisis" element={<AcademicDashboard />} />
+          <Route path="cursos" element={<CursosPage />} />
           
           <Route path="sesion" element={<SesionTiempoReal />} />
           <Route path="perfil" element={<PerfilEstudiante />} />
@@ -65,6 +67,7 @@ const ProtectedLayout = () => {
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <NavLink to="/">⚛️ Nodo Operacional</NavLink>
                 <NavLink to="/analisis">📄 Nodo Digital</NavLink>
+                <NavLink to="/cursos">📚 Mis Cursos</NavLink>
                 <NavLink to="/sesion">🎥 Stream Multimedia</NavLink>
                 <NavLink to="/perfil">👤 Avatar Personal</NavLink>
                 <NavLink to="/reportes">📊 Análisis Inteligente</NavLink>

@@ -113,18 +113,22 @@ def register_blueprints(app):
     except Exception as e:
         print(f"   ❌ Error al registrar Academic routes: {e}")
     
-    # ========== MÓDULO 2: Video & Audio ==========
-    # IMPORTANTE: Este es el blueprint principal del Módulo 2
+    # ========== MÓDULO 2: Video & Audio ========== 
+    # ✅ HABILITADO CON LAZY LOADING (TensorFlow se carga en primer uso)
     try:
         from app.routes.video_routes import video_bp, audio_bp
         app.register_blueprint(video_bp, url_prefix='/api/video')
         app.register_blueprint(audio_bp, url_prefix='/api/audio')
         print("   ✅ Video routes: /api/video")
         print("   ✅ Audio routes: /api/audio")
+        print("   📹 Análisis facial (TensorFlow se cargará en primer uso)")
     except ImportError as e:
-        print(f"   ⚠️  Video/Audio routes no disponible: {e}")
+        print(f"   ⚠️  Video/Audio routes no disponibles: {str(e)[:100]}")
+        print("   📝 Verifica que TensorFlow 2.16.2 esté instalado")
     except Exception as e:
-        print(f"   ⚠️  Error al registrar Video/Audio routes: {e}")
+        print(f"   ❌ Error al registrar Video/Audio: {str(e)[:100]}")
+        import traceback
+        traceback.print_exc()
     
     # ========== DASHBOARD ==========
     try:

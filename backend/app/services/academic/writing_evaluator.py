@@ -53,15 +53,17 @@ class WritingEvaluator:
     @staticmethod
     def _get_model():
         """Obtiene el modelo de Gemini configurado"""
-        preferred = os.environ.get('GEMINI_MODEL', 'gemini-1.5-pro')
+        preferred = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
         
-        # Lista de modelos a intentar en orden
+        # Lista de modelos a intentar en orden (actualizados a versiones 2024-2025)
         models_to_try = [
             preferred,
-            'gemini-1.5-pro',
-            'gemini-1.5-flash',
-            'gemini-1.5-pro-latest',
-            'gemini-pro'
+            'gemini-2.5-flash',
+            'gemini-2.5-pro',
+            'gemini-2.0-flash',
+            'gemini-flash-latest',
+            'gemini-pro-latest',
+            'gemini-exp-1206'
         ]
         
         # Eliminar duplicados manteniendo el orden
@@ -463,9 +465,32 @@ GENERA LA EVALUACIÓN EXHAUSTIVA:
             response = model.generate_content(prompt)
             print(f"  ✅ Respuesta recibida: {len(response.text)} caracteres")
             
-            # Limpiar y parsear JSON
-            clean_text = response.text.replace("```json", "").replace("```", "").strip()
-            evaluation = json.loads(clean_text)
+            # Limpiar respuesta de marcadores de código
+            clean_text = response.text.strip()
+            
+            # Remover bloques de código markdown si existen
+            if clean_text.startswith("```"):
+                # Buscar el primer { y el último }
+                start = clean_text.find("{")
+                end = clean_text.rfind("}") + 1
+                if start != -1 and end > start:
+                    clean_text = clean_text[start:end]
+            
+            # Intentar parsear JSON
+            try:
+                evaluation = json.loads(clean_text)
+            except json.JSONDecodeError as e:
+                # Si falla, intentar reparar JSON común
+                print(f"⚠️  Error JSON, intentando reparar: {e}")
+                
+                # Buscar el JSON válido más largo
+                import re
+                json_match = re.search(r'\{[^}]*(?:\{[^}]*\}[^}]*)*\}', clean_text, re.DOTALL)
+                if json_match:
+                    clean_text = json_match.group(0)
+                    evaluation = json.loads(clean_text)
+                else:
+                    raise
             
             print(f"  ✅ Evaluación completada - Score: {evaluation.get('overall_score', 'N/A')}/100")
             print(f"  📊 Errores detectados: {len(evaluation.get('specific_errors', []))}")

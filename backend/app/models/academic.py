@@ -13,8 +13,10 @@ class AcademicCourse(db.Model):
     schedule_info = db.Column(db.String(255)) 
     category = db.Column(db.String(50), default='general')  # Categoría del curso
     icon = db.Column(db.String(50), default='BookOpen')  # Icono del curso
-    color = db.Column(db.String(20), default="blue")  # Color del curso
+    color = db.Column(db.String(20), default="slate")  # Color del curso
+    status = db.Column(db.String(20), default='active')  # Estado del curso: active, inactive, archived
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relación inversa segura: No tocamos User, pero User podrá acceder a .courses
     user = db.relationship('User', backref=db.backref('courses', lazy=True))
@@ -32,7 +34,9 @@ class AcademicCourse(db.Model):
             'category': self.category,
             'icon': self.icon,
             'color': self.color,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'status': self.status if hasattr(self, 'status') else 'active',
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if hasattr(self, 'updated_at') and self.updated_at else None
         }
 
 class AcademicTask(db.Model):

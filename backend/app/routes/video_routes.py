@@ -19,6 +19,7 @@ from app.models.audio_transcription import AudioTranscription
 from app.models.attention_metrics import AttentionMetrics
 
 # Importar controladores - TODOS ACTIVOS (con manejo de errores)
+CONTROLLERS_AVAILABLE = False
 try:
     from app.controllers.video_controller import VideoController
     from app.controllers.audio_controller import AudioController
@@ -27,7 +28,10 @@ try:
     CONTROLLERS_AVAILABLE = True
     print("   ✅ VideoController y AudioController disponibles")
 except Exception as e:
-    print(f"   ⚠️ Controllers no disponibles: {str(e)}")
+    print(f"   ⚠️ Controllers no disponibles (TensorFlow issue): {str(e)[:80]}")
+    print(f"   📝 Video routes funcionarán sin procesamiento de IA")
+    video_controller = None
+    audio_controller = None
     print("   ℹ️ Usando implementación manual de endpoints")
     video_controller = None
     audio_controller = None

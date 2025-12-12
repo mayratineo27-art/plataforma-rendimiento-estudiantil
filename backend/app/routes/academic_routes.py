@@ -106,6 +106,72 @@ def get_academic_dashboard(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@academic_bp.route('/courses/<int:course_id>', methods=['GET'])
+def get_course(course_id):
+    """Obtener detalles de un curso específico"""
+    try:
+        course = AcademicCourse.query.get(course_id)
+        if not course:
+            return jsonify({"error": "Curso no encontrado"}), 404
+        
+        return jsonify({"course": course.to_dict()}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@academic_bp.route('/courses/<int:course_id>', methods=['PUT'])
+def update_course(course_id):
+    """Actualizar un curso existente"""
+    try:
+        course = AcademicCourse.query.get(course_id)
+        if not course:
+            return jsonify({"error": "Curso no encontrado"}), 404
+        
+        data = request.json
+        
+        # Actualizar campos si están presentes
+        if 'name' in data:
+            course.name = data['name']
+        if 'code' in data:
+            course.code = data['code']
+        if 'professor' in data:
+            course.professor = data['professor']
+        if 'schedule' in data:
+            course.schedule_info = data['schedule']
+        if 'category' in data:
+            course.category = data['category']
+        if 'icon' in data:
+            course.icon = data['icon']
+        if 'color' in data:
+            course.color = data['color']
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Curso actualizado exitosamente",
+            "course": course.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@academic_bp.route('/courses/<int:course_id>', methods=['DELETE'])
+def delete_course(course_id):
+    """Eliminar un curso"""
+    try:
+        course = AcademicCourse.query.get(course_id)
+        if not course:
+            return jsonify({"error": "Curso no encontrado"}), 404
+        
+        db.session.delete(course)
+        db.session.commit()
+        
+        return jsonify({"message": "Curso eliminado exitosamente"}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 # --- 2. SUBIDA DE SÍLABOS (PDF) ---
 
 # --- 3. NUEVAS HERRAMIENTAS IA (Mapas y Resúmenes) ---
@@ -479,53 +545,6 @@ def delete_task(task_id):
         db.session.commit()
         return jsonify({"message": "Tarea eliminada"})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# --- 5. GESTIÓN DE CURSOS (Actualizar y Eliminar) ---
-
-@academic_bp.route('/course/<int:course_id>', methods=['PUT'])
-def update_course(course_id):
-    """Actualiza información de un curso"""
-    try:
-        course = AcademicCourse.query.get(course_id)
-        if not course:
-            return jsonify({"error": "Curso no encontrado"}), 404
-        
-        data = request.json
-        if 'name' in data:
-            course.name = data['name']
-        if 'code' in data:
-            course.code = data['code']
-        if 'professor' in data:
-            course.professor = data['professor']
-        if 'schedule' in data or 'schedule_info' in data:
-            course.schedule_info = data.get('schedule') or data.get('schedule_info')
-        if 'category' in data:
-            course.category = data['category']
-        if 'icon' in data:
-            course.icon = data['icon']
-        if 'color' in data:
-            course.color = data['color']
-        
-        db.session.commit()
-        return jsonify({"message": "Curso actualizado", "course": course.to_dict()}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-@academic_bp.route('/course/<int:course_id>', methods=['DELETE'])
-def delete_course(course_id):
-    """Elimina un curso y todas sus tareas asociadas"""
-    try:
-        course = AcademicCourse.query.get(course_id)
-        if not course:
-            return jsonify({"error": "Curso no encontrado"}), 404
-        
-        db.session.delete(course)
-        db.session.commit()
-        return jsonify({"message": "Curso eliminado"}), 200
-    except Exception as e:
-        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 # --- 6. ESTADÍSTICAS ---

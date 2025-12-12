@@ -1,12 +1,13 @@
 """
 app/services/video_processing/emotion_recognition.py
-Servicio de Reconocimiento de Emociones con DeepFace
+Servicio de Reconocimiento de Emociones con DeepFace (LAZY LOADING)
 Plataforma Integral de Rendimiento Estudiantil - Módulo 2
 """
 
 import cv2
 import numpy as np
-from deepface import DeepFace
+# ⚠️ NO IMPORTAR DeepFace aquí - causa deadlock en Windows
+# from deepface import DeepFace
 from typing import Dict, List, Optional, Tuple
 import os
 
@@ -17,6 +18,8 @@ class EmotionRecognitionService:
     
     Detecta rostros en frames de video y analiza 7 emociones básicas,
     luego las mapea a 16 emociones contextuales.
+    
+    NOTA: DeepFace se carga LAZY (solo cuando se usa) para evitar deadlock
     """
     
     def __init__(self):
@@ -30,9 +33,28 @@ class EmotionRecognitionService:
         self.available_models = ['VGG-Face', 'Facenet', 'Facenet512', 'OpenFace', 
                                 'DeepFace', 'DeepID', 'ArcFace', 'Dlib']
         
-        print(f"✅ EmotionRecognitionService inicializado")
+        # Flag para indicar si DeepFace está cargado
+        self._deepface_loaded = False
+        self._DeepFace = None
+        
+        print(f"✅ EmotionRecognitionService inicializado (lazy mode)")
         print(f"   Detector: {self.detector_backend}")
         print(f"   Modelo: {self.model_name}")
+        print(f"   ⏳ DeepFace se cargará en el primer uso")
+    
+    def _load_deepface(self):
+        """Cargar DeepFace solo cuando se necesite (lazy loading)"""
+        if not self._deepface_loaded:
+            try:
+                print("   ⏳ Cargando DeepFace (puede tardar 20-30 segundos)...")
+                from deepface import DeepFace
+                self._DeepFace = DeepFace
+                self._deepface_loaded = True
+                print("   ✅ DeepFace cargado exitosamente")
+            except Exception as e:
+                print(f"   ❌ Error cargando DeepFace: {str(e)}")
+                raise
+        return self._DeepFace
     
     def analyze_frame(
         self,
@@ -60,6 +82,9 @@ class EmotionRecognitionService:
                 }
         """
         try:
+            # Cargar DeepFace si aún no está cargado (lazy loading)
+            DeepFace = self._load_deepface()
+            
             # Analizar con DeepFace
             results = DeepFace.analyze(
                 img_path=frame,
